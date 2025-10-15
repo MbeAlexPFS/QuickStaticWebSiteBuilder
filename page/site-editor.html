@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>QuickStaticWebSiteBuilder - Site</title>
+    <link rel="icon" href="/favicon.png" type="image/x-icon" />
+    <link rel="stylesheet" href="../asset/bootstrap.min.css" />
+    <script src="../asset/bootstrap.bundle.min.js"></script>
+    <script src="../asset/jszip.min.js"></script>
+    <script src="../asset/FileSaver.min.js"></script>
+    <script src="../asset/dexie.min.js"></script>
+    <script src="../asset/beautify.min.js"></script>
+    <script src="../asset/beautify-css.min.js"></script>
+    <script src="../asset/app/my-beautify.js"></script>
+    <script src="../asset/beautify-html.min.js"></script>
+    <style>
+      .component-card:hover {
+        box-shadow: 0 0 10px grey;
+      }
+
+      table {
+        table-layout: auto; /* Default behavior */
+        width: 100%; /* Optional: Adjust table width */
+      }
+
+      textarea {
+        width: 100%;
+      }
+
+      table td {
+        white-space: nowrap; /** added **/
+      }
+
+      table th {
+        white-space: nowrap; /** added **/
+      }
+
+      .input-block {
+        position: relative;
+        display: inline-block;
+      }
+
+      .input-button {
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        padding: 5px 10px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        opacity: 0.5;
+        z-index: 100;
+      }
+
+      .input-button:hover {
+        opacity: 1;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      class="modal fade"
+      id="codeEditor"
+      data-backdrop="static"
+      data-keyboard="false"
+      tabindex="-1"
+      aria-labelledby="codeEditor"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="codeEditorLabel">
+              Edition du code css global : a.css
+            </h5>
+            <button class="btn btn-primary mx-5" onclick="beautify()">
+              Formatter
+            </button>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <textarea rows="20">
+                //hello world
+            </textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="container-fluid">
+      <div class="row">
+        <div
+          class="d-flex gap-2 col-12 p-2 px-3 border border-2 border-primary"
+        >
+          <div class="col-sm-fluid">
+            <a type="button" class="btn btn-primary" href="../index.html">
+              Retour
+            </a>
+            <button
+              type="button"
+              class="btn btn-primary"
+              onclick="show('site')"
+            >
+              Paramettre
+            </button>
+            <button type="button" class="btn btn-primary" onclick="saveSite()">
+              Sauvegarder
+            </button>
+          </div>
+          <div
+            class="d-flex col-sm overflow-x border-start border-end border-2 border-dark px-2 gap-2"
+            id="page-selector"
+          >
+            <!-- links btn to page of site -->
+          </div>
+          <div class="col-sm-fluid">
+            <button
+              type="button"
+              class="btn btn-success"
+              data-bs-toggle="modal"
+              data-bs-target="#modalview"
+            >
+              Apercu de la page
+            </button>
+            <button type="button" class="btn btn-success" onclick="build()">
+              Builder
+            </button>
+          </div>
+        </div>
+
+        <div
+          class="col-12 border border-2 border-primary"
+          style="height: calc(100vh - 60px); overflow-y: auto"
+        >
+          <!-- Formulaire de configuration générale du site -->
+          <div class="container-sm p-5" id="site-form">
+            <h1>Configuration du site</h1>
+
+            <hr />
+            <div class="accordion" id="accordionExample">
+              <div class="accordion-item">
+                <h2 class="accordion-header" id="headingOne">
+                  <button
+                    class="accordion-button collapsed"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#collapseOne"
+                    aria-expanded="true"
+                    aria-controls="collapseOne"
+                  >
+                    Information
+                  </button>
+                </h2>
+                <div
+                  id="collapseOne"
+                  class="accordion-collapse collapse"
+                  aria-labelledby="headingOne"
+                  data-bs-parent="#accordionExample"
+                >
+                  <div class="accordion-body">
+                    <div class="mb-3">
+                      <label for="" class="form-label">Nom du site</label>
+                      <input
+                        type="text"
+                        class="form-control"
+                        id="site-name"
+                        placeholder="Acme site"
+                      />
+                      <small class="form-text text-muted"
+                        >Entrez le nom du site</small
+                      >
+                    </div>
+
+                    <div class="mb-3">
+                      <label for="" class="form-label"
+                        >Description du site</label
+                      >
+                      <textarea
+                        class="form-control"
+                        id="site-desc"
+                        placeholder="Acme site description"
+                      ></textarea>
+                      <small class="form-text text-muted"
+                        >Entrez une description du site</small
+                      >
+                    </div>
+
+                    <div class="mb-3">
+                      <label for="" class="form-label"
+                        >La langue du site</label
+                      >
+                      <input
+                        type="text"
+                        class="form-control"
+                        id="site-lang"
+                        value="fr"
+                      ></textarea>
+                      <small class="form-text text-muted"
+                        >Entrez la langue pour toute les pages du site</small
+                      >
+                    </div>
+
+                    <div class="mb-3">
+                      <label for="" class="form-label"
+                        >Contenu meta</label
+                      >
+                      <textarea
+                        class="form-control"
+                        id="site-meta"
+                      ><meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+                      </textarea>
+                      <small class="form-text text-muted"
+                        >Entrez les données meta du site</small
+                      >
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="accordion-item">
+                <h2 class="accordion-header" id="headingTwo">
+                  <button
+                    class="accordion-button collapsed"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#collapseTwo"
+                    aria-expanded="true"
+                    aria-controls="collapseTwo"
+                  >
+                    Librairie
+                  </button>
+                </h2>
+                <div
+                  id="collapseTwo"
+                  class="accordion-collapse collapse"
+                  aria-labelledby="headingTwo"
+                  data-bs-parent="#accordionExample"
+                >
+                  <div class="accordion-body">
+                    <div class="mb-3">
+                      <label for="" class="form-label">La librairie</label>
+                      <input
+                        type="file"
+                        class="form-control"
+                        id="library-file"
+                      />
+                      <small class="form-text text-muted"
+                        >Selectionner la librairie</small
+                      >
+                    </div>
+
+                    <div class="mb-3">
+                      <label for="" class="form-label">type de librairie</label>
+                      <select class="form-control" id="library-type">
+                        <option value="script" selected>script</option>
+                        <option value="style">style</option>
+                      </select>
+                      <small class="form-text text-muted"
+                        >Determine la manière d'inclure les libraries</small
+                      >
+                    </div>
+
+                    <div class="d-grid gap-2 mb-3">
+                      <button
+                        type="button"
+                        class="btn btn-primary"
+                        onclick="addLibraryFile()"
+                      >
+                        Ajouter la librairie
+                      </button>
+                    </div>
+
+                    <div class="table-responsive">
+                      <table class="table table-primary">
+                        <thead>
+                          <tr>
+                            <th scope="col">Nom de la librairie</th>
+                            <th scope="col">type de la librairie</th>
+                            <th scope="col">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody id="libraryList"></tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="accordion-item">
+                <h2 class="accordion-header" id="headingThree">
+                  <button
+                    class="accordion-button collapsed"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#collapseThree"
+                    aria-expanded="true"
+                    aria-controls="collapseThree"
+                  >
+                    Code javascript
+                  </button>
+                </h2>
+                <div
+                  id="collapseThree"
+                  class="accordion-collapse collapse"
+                  aria-labelledby="headingThree"
+                  data-bs-parent="#accordionExample"
+                >
+                  <div class="accordion-body">
+                    <div class="mb-3">
+                      <label for="" class="form-label"
+                        >Nom du fichier javascript</label
+                      >
+                      <input
+                        type="text"
+                        class="form-control"
+                        id="global-js-name"
+                        placeholder="script"
+                      />
+                      <small class="form-text text-muted"
+                        >Entrez le nom qui sera utilisé par le fichier js</small
+                      >
+                    </div>
+
+                    <div class="mb-3">
+                      <label for="" class="form-label"
+                        >Contenu du fichier javascript</label
+                      >
+                      <div class="input-block w-100">
+                        <textarea
+                          class="form-control"
+                          id="global-js-content"
+                          placeholder="console.log('hello world')"
+                        ></textarea>
+                        <button
+                          class="btn btn-primary input-button"
+                          onclick="openEditor('Contenu du fichier javascript','#global-js-content')"
+                        >
+                          +
+                        </button>
+                      </div>
+                      <small class="form-text text-muted"
+                        >Entrez le code javascript</small
+                      >
+                    </div>
+
+                    <div class="d-grid gap-2 mb-3">
+                      <button
+                        type="button"
+                        class="btn btn-primary"
+                        onclick="addGlobalCodeJS()"
+                      >
+                        Ajouter le fichier javascript
+                      </button>
+                    </div>
+
+                    <div class="table-responsive">
+                      <table class="table table-primary">
+                        <thead>
+                          <tr>
+                            <th scope="col">Nom du fichier javascript</th>
+                            <th scope="col" style="width: 100%">
+                              Contenu du fichier javascript
+                            </th>
+                            <th scope="col">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody id="globalCodeJSList"></tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="accordion-item">
+                <h2 class="accordion-header" id="headingFour">
+                  <button
+                    class="accordion-button collapsed"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#collapseFour"
+                    aria-expanded="true"
+                    aria-controls="collapseFour"
+                  >
+                    Code CSS
+                  </button>
+                </h2>
+                <div
+                  id="collapseFour"
+                  class="accordion-collapse collapse"
+                  aria-labelledby="headingFour"
+                  data-bs-parent="#accordionExample"
+                >
+                  <div class="accordion-body">
+                    <div class="mb-3">
+                      <label for="" class="form-label"
+                        >Nom du fichier CSS</label
+                      >
+                      <input
+                        type="text"
+                        class="form-control"
+                        id="global-css-name"
+                        placeholder="style"
+                      />
+                      <small class="form-text text-muted"
+                        >Entrez le nom qui sera utilisé par le fichier
+                        CSS</small
+                      >
+                    </div>
+
+                    <div class="mb-3">
+                      <label for="" class="form-label"
+                        >Contenu du fichier CSS</label
+                      >
+                      <div class="input-block w-100">
+                        <textarea
+                          class="form-control"
+                          id="global-css-content"
+                          placeholder="body { padding : 10px; }"
+                        ></textarea>
+                        <button
+                          class="btn btn-primary input-button"
+                          onclick="openEditor('Contenu du fichier CSS','#global-css-content')"
+                        >
+                          +
+                        </button>
+                      </div>
+                      <small class="form-text text-muted"
+                        >Entrez le code CSS</small
+                      >
+                    </div>
+
+                    <div class="d-grid gap-2 mb-3">
+                      <button
+                        type="button"
+                        class="btn btn-primary"
+                        onclick="addGlobalCodeCSS()"
+                      >
+                        Ajouter le fichier CSS
+                      </button>
+                    </div>
+
+                    <div class="table-responsive">
+                      <table class="table table-primary">
+                        <thead>
+                          <tr>
+                            <th scope="col">Nom du fichier CSS</th>
+                            <th scope="col" style="width: 100%">
+                              Contenu du fichier CSS
+                            </th>
+                            <th scope="col">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody id="globalCodeCSSList"></tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="accordion-item">
+                <h2 class="accordion-header" id="headingFive">
+                  <button
+                    class="accordion-button collapsed"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#collapseFive"
+                    aria-expanded="true"
+                    aria-controls="collapseFive"
+                  >
+                    Page
+                  </button>
+                </h2>
+                <div
+                  id="collapseFive"
+                  class="accordion-collapse collapse"
+                  aria-labelledby="headingFive"
+                  data-bs-parent="#accordionExample"
+                >
+                  <div class="accordion-body">
+                    <div class="mb-3">
+                      <label for="" class="form-label">Nom du fichier</label>
+                      <input
+                        type="text"
+                        class="form-control"
+                        id="page-name"
+                        placeholder="Accueil"
+                      />
+                      <small class="form-text text-muted"
+                        >Entrez le nom du fichier de la page</small
+                      >
+                    </div>
+
+                    <div class="mb-3">
+                      <label for="" class="form-label"
+                        >Titre de la page</label
+                      >
+                      <textarea
+                        class="form-control"
+                        id="page-title"
+                        placeholder="Page d'accueil"
+                      ></textarea>
+                      <small class="form-text text-muted"
+                        >Entrez un titre pour la page</small
+                      >
+                    </div>
+
+                    <div class="mb-3">
+                      <label for="" class="form-label"
+                        >Code javaScript de la page</label
+                      >
+                      <div class="input-block w-100">
+                        <textarea
+                          class="form-control"
+                          id="page-js"
+                          placeholder="console.log('hello')"
+                        ></textarea>
+                        <button
+                          class="btn btn-primary input-button"
+                          onclick="openEditor('Code javaScript de la page','#page-js')"
+                        >
+                          +
+                        </button>
+                      </div>
+                      <small class="form-text text-muted"
+                        >Entrez un code javascript spécifique à la page</small
+                      >
+                    </div>
+
+                    <div class="mb-3">
+                      <label for="" class="form-label"
+                        >Code CSS de la page</label
+                      >
+                      <div class="input-block w-100">
+                        <textarea
+                          class="form-control"
+                          id="page-css"
+                          placeholder="body {padding : 10px;}"
+                        ></textarea>
+                        <button
+                          class="btn btn-primary input-button"
+                          onclick="openEditor('Code CSS de la page','#page-css')"
+                        >
+                          +
+                        </button>
+                      </div>
+                      <small class="form-text text-muted"
+                        >Entrez un code CSS spécifique à la page</small
+                      >
+                    </div>
+
+                    <div class="d-grid gap-2 mb-3">
+                      <button
+                        type="button"
+                        class="btn btn-primary"
+                        onclick="addPage()"
+                      >
+                        Ajouter une page
+                      </button>
+                    </div>
+
+                    <div class="table-responsive">
+                      <table class="table table-primary">
+                        <thead>
+                          <tr>
+                            <th scope="col">Nom de la page</th>
+                            <th scope="col">Titre de la page</th>
+                            <th scope="col" style="width: 50%">
+                              Code javaScript
+                            </th>
+                            <th scope="col" style="width: 50%">Code CSS</th>
+                            <th scope="col">Inclusion librairie</th>
+                            <th scope="col">Inclusion javascript</th>
+                            <th scope="col">Inclusion CSS</th>
+                            <th scope="col">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody id="page-list"></tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="container-fluid p-3" id="site-page-editor">
+            <h5 class="mb-3">
+              Édition de la page : <span id="page-name-editing"></span>
+            </h5>
+            <div class="row g-3" style="height: 80vh">
+              <div
+                class="border border-primary border-2 p-2 mt-3 col-md-2 h-100"
+              >
+                <div class="my-3">
+                  <label>Recherche:</label>
+                  <input
+                    type="search"
+                    id="searchComponent"
+                    class="form-control"
+                  />
+                  <hr />
+                </div>
+                <div
+                  class="g-2 mt-3 row my-3 overflow-y-auto"
+                  id="component-selector"
+                  style="height: 60vh"
+                ></div>
+              </div>
+              <iframe
+                src="view.html"
+                class="col-md-8 border border-primary border-2 rounded overflow-auto h-100"
+                id="page-view"
+              ></iframe>
+              <div
+                class="col-md-2 border border-primary border-2 rounded overflow-auto h-100"
+              >
+                <h3>
+                  Élément sélectionné : <span id="selected-element"></span>
+                </h3>
+                <h4 class="text-secondary">
+                  Composant sélectionné : <span id="selected-component"></span>
+                </h4>
+                <div class="accordion mt-3" id="editorAccordion">
+                  <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingCopied">
+                      <button
+                        class="accordion-button collapsed"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#element-copied-form"
+                        aria-expanded="false"
+                      >
+                        Actions avec la copie
+                      </button>
+                    </h2>
+                    <div
+                      id="element-copied-form"
+                      class="accordion-collapse collapse"
+                      data-bs-parent="#editorAccordion"
+                    >
+                      <div class="accordion-body">
+                        <h5 class="text-dark">
+                          Élément copié : <span id="copied-element"></span>
+                        </h5>
+                        <div class="d-grid gap-2 mb-3">
+                          <button
+                            class="btn btn-primary"
+                            onclick="addRootStart(true)"
+                          >
+                            Ajouter la copie au début de la page
+                          </button>
+                          <button
+                            class="btn btn-primary"
+                            onclick="addRootEnd(true)"
+                          >
+                            Ajouter la copie à la fin de la page
+                          </button>
+                          <button
+                            class="btn btn-primary"
+                            onclick="addBefore(true)"
+                          >
+                            Ajouter la copie avant
+                          </button>
+                          <button
+                            class="btn btn-primary"
+                            onclick="addAfter(true)"
+                          >
+                            Ajouter la copie après
+                          </button>
+                        </div>
+                        <button
+                          class="btn btn-danger w-100"
+                          onclick="cancelCopie()"
+                        >
+                          Annuler la copie
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingGlobal">
+                      <button
+                        class="accordion-button"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#root-form"
+                        aria-expanded="true"
+                      >
+                        Actions globales
+                      </button>
+                    </h2>
+                    <div
+                      id="root-form"
+                      class="accordion-collapse collapse show"
+                      data-bs-parent="#editorAccordion"
+                    >
+                      <div class="accordion-body">
+                        <div class="d-grid gap-2 mb-3">
+                          <button
+                            class="btn btn-primary"
+                            onclick="addRootStart()"
+                          >
+                            Ajouter le composant au début de la page
+                          </button>
+                          <button
+                            class="btn btn-primary"
+                            onclick="addRootEnd()"
+                          >
+                            Ajouter le composant à la fin de la page
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingElement">
+                      <button
+                        class="accordion-button collapsed"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#element-form"
+                        aria-expanded="false"
+                      >
+                        Actions sur l'élément
+                      </button>
+                    </h2>
+                    <div
+                      id="element-form"
+                      class="accordion-collapse collapse"
+                      data-bs-parent="#editorAccordion"
+                    >
+                      <div class="accordion-body">
+                        <div class="d-grid gap-2 mb-3">
+                          <button class="btn btn-primary" onclick="addBefore()">
+                            Ajouter le composant avant
+                          </button>
+                          <button class="btn btn-primary" onclick="addAfter()">
+                            Ajouter le composant après
+                          </button>
+                        </div>
+                        <div id="form-empty-param" class="mb-3">
+                          <label class="form-label">Emplacement</label>
+                          <select
+                            class="form-select form-select-lg"
+                            id="element-empty-param"
+                          ></select>
+                          <button
+                            class="btn btn-primary mt-2"
+                            onclick="addIn()"
+                          >
+                            Ajouter le composant dedans
+                          </button>
+                        </div>
+                        <div class="d-grid gap-2 mb-3">
+                          <button
+                            class="btn btn-primary"
+                            onclick="copieElement()"
+                          >
+                            Copier l'élément
+                          </button>
+                          <button class="btn btn-danger" onclick="delElement()">
+                            Supprimer l'élément
+                          </button>
+                        </div>
+                        <h5>Édition</h5>
+                        <div id="element-param-form"></div>
+                        <hr />
+                        <h5>Animation (expérimentale)</h5>
+                        <label class="form-label">OnView animation (tester dans l'aperçu de la page)</label>
+                        <select
+                          class="form-select form-select-lg"
+                          id="element-onview-anim"
+                        >
+                          <option value="none">Aucune animation</option>
+                          <option value="fade">Apparaît progressivement</option>
+                          <option value="fade-up">Apparaît vers le haut</option>
+                          <option value="fade-down">
+                            Apparaît vers le bas
+                          </option>
+                          <option value="fade-left">
+                            Apparaît depuis la gauche
+                          </option>
+                          <option value="fade-right">
+                            Apparaît depuis la droite
+                          </option>
+                          <option value="flip-up">Rotation vers le haut</option>
+                          <option value="flip-down">
+                            Rotation vers le bas
+                          </option>
+                          <option value="flip-left">
+                            Rotation vers la gauche
+                          </option>
+                          <option value="flip-right">
+                            Rotation vers la droite
+                          </option>
+                          <option value="slide-up">Glisse vers le haut</option>
+                          <option value="slide-down">Glisse vers le bas</option>
+                          <option value="slide-left">
+                            Glisse depuis la gauche
+                          </option>
+                          <option value="slide-right">
+                            Glisse depuis la droite
+                          </option>
+                          <option value="zoom-in">
+                            Zoom avant (agrandissement)
+                          </option>
+                          <option value="zoom-in-up">
+                            Zoom avant en montant
+                          </option>
+                          <option value="zoom-in-down">
+                            Zoom avant en descendant
+                          </option>
+                          <option value="zoom-in-left">
+                            Zoom avant depuis la gauche
+                          </option>
+                          <option value="zoom-in-right">
+                            Zoom avant depuis la droite
+                          </option>
+                          <option value="zoom-out">
+                            Zoom arrière (rétrécissement)
+                          </option>
+                          <option value="zoom-out-up">
+                            Zoom arrière en montant
+                          </option>
+                          <option value="zoom-out-down">
+                            Zoom arrière en descendant
+                          </option>
+                          <option value="zoom-out-left">
+                            Zoom arrière depuis la gauche
+                          </option>
+                          <option value="zoom-out-right">
+                            Zoom arrière depuis la droite
+                          </option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- apercu popup -->
+    <div
+      class="modal fade"
+      id="modalview"
+      tabindex="-1"
+      role="dialog"
+      aria-labelledby="modalTitleId"
+    >
+      <div class="modal-dialog modal-sm modal-fullscreen" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalTitleId">
+              Apercu de la page : <span id="page">index</span>
+            </h5>
+            <button
+              type="button"
+              class="btn btn-primary mx-5"
+              onclick="updateRealView()"
+            >
+              Recharger la page
+            </button>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <iframe
+              class="h-100 w-100 border border-2 border-black"
+              id="realview"
+            ></iframe>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Script principal -->
+    <script src="../asset/app/db.js"></script>
+    <script src="../asset/app/make_site.js"></script>
+  </body>
+</html>

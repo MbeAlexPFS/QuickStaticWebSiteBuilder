@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>QuickStaticWebSiteBuilder - Composant</title>
+    <link rel="icon" href="/favicon.png" type="image/x-icon" />
+    <link rel="stylesheet" href="../asset/bootstrap.min.css" />
+    <script src="../asset/bootstrap.bundle.min.js"></script>
+    <script src="../asset/beautify.min.js"></script>
+    <script src="../asset/beautify-html.min.js"></script>
+    <style>
+      #block-view * {
+        padding: 10px;
+        margin: 10px;
+        background-color: orange;
+        color: white;
+        border-radius: 10px;
+        border: 2px solid black;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container-sm">
+      <div class="d-flex g-0 justify-content-center align-items-center m-5">
+        <!-- preview popup  -->
+        <div
+          class="modal fade"
+          id="modalview"
+          tabindex="-1"
+          role="dialog"
+          aria-labelledby="modalTitleId"
+        >
+          <div class="modal-dialog modal-sm modal-fullscreen" role="document">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="modalTitleId">
+                  Apercu du composant
+                  <span class="text-danger"
+                    >(Sauvegarder le composant pour assurer la mise à jour de
+                    l'apercu)</span
+                  >
+                </h5>
+                <button
+                  type="button"
+                  class="btn-close"
+                  data-bs-dismiss="modal"
+                  aria-label="Close"
+                ></button>
+              </div>
+              <div class="modal-body">
+                <iframe
+                  class="h-100 w-100 border border-2 border-black"
+                  id="realview"
+                ></iframe>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Librairie selection popup -->
+
+        <!-- Modal Body-->
+        <div
+          class="modal fade"
+          id="lib-select"
+          tabindex="-1"
+          role="dialog"
+          aria-labelledby="modalTitleId"
+          aria-hidden="true"
+        >
+          <div class="modal-dialog" role="document">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="modalTitleId">
+                  Selectionner un ou plusieurs librairies à ajouter
+                </h5>
+                <button
+                  type="button"
+                  class="btn-close"
+                  data-bs-dismiss="modal"
+                  aria-label="Close"
+                ></button>
+              </div>
+              <div class="modal-body">
+                <div class="container-fluid">
+                  <div class="mb-3">
+                    <label for="" class="form-label">Recherche</label>
+                    <input
+                      type="search"
+                      class="form-control"
+                      id="lib-search"
+                      aria-describedby="helpId"
+                      placeholder="bootstrap"
+                    />
+                    <small id="helpId" class="form-text text-muted"
+                      >Chercher une librairie</small
+                    >
+                  </div>
+
+                  <div class="table-responsive">
+                    <table class="table table-primary">
+                      <thead>
+                        <tr>
+                          <th scope="col">Librarie</th>
+                          <th scope="col">Inclure</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr class="">
+                          <td scope="row">bootstrap-css2</td>
+                          <td>
+                            <div class="form-check form-switch">
+                              <input
+                                class="form-check-input"
+                                type="checkbox"
+                                id="select-lib-bootstrap-css"
+                              />
+                            </div>
+                          </td>
+                        </tr>
+                        <tr class="">
+                          <td scope="row">bootstrap-js</td>
+                          <td>
+                            <div class="form-check form-switch">
+                              <input
+                                class="form-check-input"
+                                type="checkbox"
+                                id="select-lib-bootstrap-js"
+                              />
+                            </div>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button
+                  type="button"
+                  class="btn btn-secondary"
+                  data-bs-dismiss="modal"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Étape 1 : Saisie du code HTML -->
+        <div
+          class="p-3 border border-2 border-secondary shadow rounded w-100"
+          id="setCode"
+        >
+          <a class="btn btn-primary mb-2" href="/"
+            >Retour à la page d'accueil</a
+          >
+          <h4>Création d'un composant</h4>
+          <div class="mb-3">
+            <label class="form-label"
+              >Entrez le code HTML du composant et mettez les parties
+              personnalisables entre {* *}</label
+            >
+            <textarea
+              class="form-control"
+              id="cdeComponent"
+              rows="3"
+              placeholder="Copier le code html du composant ici"
+            ></textarea>
+          </div>
+          <div class="mb-3">
+            <label class="form-label"
+              >Entrez le code CSS (seulement les règles) du composant et mettez
+              les parties personnalisables entre {* *}</label
+            >
+            <textarea
+              class="form-control"
+              id="cdeCSSComponent"
+              rows="3"
+              placeholder="Copier le code css du composant ici. ex: color: '{*color*}'"
+            ></textarea>
+          </div>
+          <div class="mb-3">
+            <label class="form-label"
+              >Entrez le code JS du composant et mettez les parties
+              personnalisables entre {* *}. La variable "component" represente
+              le composant dans le script</label
+            >
+            <textarea
+              class="form-control"
+              id="cdeJSComponent"
+              rows="3"
+              placeholder="Copier le code js du composant ici"
+            ></textarea>
+          </div>
+
+          <div class="d-grid gap-2">
+            <button
+              type="button"
+              id="lib-add"
+              class="btn btn-primary"
+              data-bs-toggle="modal"
+              data-bs-target="#lib-select"
+            >
+              Inclure une librairie
+            </button>
+            Librairie incluse
+            <ul class="text-danger" id="lib-include-list">
+              Aucune librairie
+            </ul>
+          </div>
+
+          <button class="my-2 btn btn-primary" onclick="beautify()">
+            Formatter
+          </button>
+          <button class="my-2 btn btn-primary" onclick="submitCode()">
+            Soumettre
+          </button>
+        </div>
+
+        <!-- Étape 2 : Édition du composant -->
+        <div
+          class="p-3 border border-2 border-secondary shadow rounded w-100"
+          id="editCode"
+        >
+          <div class="row">
+            <div class="col">
+              <a class="btn btn-primary mb-2" href="/"
+                >Retour à la page d'accueil</a
+              >
+            </div>
+            <div class="col">
+              <button class="btn btn-primary mb-2" onclick="showUploadView()">
+                Retour
+              </button>
+            </div>
+            <div class="col">
+              <button
+                data-bs-toggle="modal"
+                data-bs-target="#modalview"
+                class="btn btn-success mb-2"
+                id="preview"
+              >
+                Apercu du composant
+              </button>
+            </div>
+          </div>
+
+          <h4>Édition du composant</h4>
+
+          <h5>Données générales du composant</h5>
+          <div class="mb-3">
+            <label class="form-label">Nom du composant</label>
+            <input
+              type="text"
+              id="component-name"
+              class="form-control"
+              placeholder="main"
+            />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Description du composant</label>
+            <textarea id="component-desc" class="form-control">
+it's component description</textarea
+            >
+          </div>
+
+          <hr />
+
+          <h5>Edition des paramettres du composant</h5>
+          <div id="edit-component-param"></div>
+
+          <hr />
+
+          <h5>Resultat</h5>
+          <div class="d-grid gap-2">
+            <button
+              type="button"
+              class="btn btn-primary"
+              onclick="copyToClipboardFallback()"
+            >
+              Sauvegarder
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Script principal -->
+    <script src="../asset/dexie.min.js"></script>
+    <script src="../asset/app/db.js"></script>
+    <script src="../asset/app/make_component.js"></script>
+  </body>
+</html>

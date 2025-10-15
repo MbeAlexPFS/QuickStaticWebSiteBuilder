@@ -1,0 +1,30 @@
+"Conteneur": { //nom du composant
+	"desc": "C'est un conteneur personnalisable",
+	"html-code": "<{*balise*} id=\"{*id*}\" class=\"bg-{*bg*}\" >{*content*}</{*balise*}>", //paramettre entre {*...*}
+	"param": {
+		"balise": 
+		[
+			"balise", //repetition de la clé
+			"text", //type qui peut etre aussi 'number', 'textarea'
+			"div" //valeur par defaut
+		],
+		"id": [
+			"id",
+			"text",
+			""
+		],
+		"bg": [
+			"bg",
+			"list",
+			[ //l'ensemble des choix dispos
+				"light",
+				"dark"
+			],
+			"light" //choix sélectionné
+		],
+		"content": [
+			"content",
+			"empty" // type 'empty' pour créer un emplacement pour mettre d'autres composants
+		]
+	}
+},

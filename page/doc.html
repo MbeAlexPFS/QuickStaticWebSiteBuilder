@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>QuickStaticWebSiteBuilder - Doc</title>
+    <link rel="icon" href="/favicon.png" type="image/x-icon" />
+    <link rel="stylesheet" href="../asset/bootstrap.min.css" />
+    <script src="../asset/bootstrap.bundle.min.js"></script>
+    <title>Documentation</title>
+  </head>
+  <body>
+    <div class="container-sm p-5">
+      <div class="row d-flex">
+        <div class="col-2 m-3 border border-2 border-black rounded p-3">
+          <ul>
+            <li><a href="/">Retour</a></li>
+            <li><a href="#about">Quick Static WebSite Builder ?</a></li>
+            <li><a href="#step">Les étapes de création</a></li>
+            <li><a href="#stack">Sous le capot</a></li>
+            <li><a href="#video">Vidéo de test</a></li>
+            <li><a href="#last">Note</a></li>
+          </ul>
+        </div>
+        <div
+          class="col border border-2 border-black rounded p-3 overflow-auto"
+          style="height: 90vh"
+        >
+          <h1 id="about" class="text-center p-3">
+            <u>Quick Static Website Builder ?</u>
+          </h1>
+          <p>
+            <span class="text-primary">Quick Static WebSite Builder</span> ou
+            <span class="text-primary">QSWSB</span> est un outil permettant la
+            création simple et automatique d'un site web.Cet outil est utilisé
+            principalement pour la création de site web statique (sans base de
+            données) comme des blogs, des portfolios, des catalogues ou des
+            sites de documentation. Ses principales fonctionnalités sont:
+          </p>
+          <ul>
+            <li>La création et la gestion de composants personnalisables</li>
+            <li>
+              La création visuelle de chaque pages du site avec les composants
+              disponibles
+            </li>
+            <li>La génération automatique du site web statique</li>
+            <li>
+              La possibioslté de partager les composants et les sites
+              (templates) via leur données JSON
+            </li>
+          </ul>
+          <p>
+            <span class="text-primary">QSWSB</span> est un projet open source,
+            vous pouvez le retrouver sur <a href="">ce lien</a>.
+          </p>
+          <h1 id="step" class="text-center p-3">
+            <u>Les étapes de création</u>
+          </h1>
+          <h2>0 - Configuration de l'application</h2>
+          <p>
+            Vous devez l'executer sur pc, sur un serveur web et dans un
+            navigateur supportant IndexedDB
+          </p>
+          <h2>1 - Créer des composants</h2>
+          <p>
+            Vous pouvez soit créer à partir de zéro soit vous basez sur le code
+            html d'un composant vu sur le web (il ne faut pas oublier de garder
+            ses codes css et js pour l'inclure dans la création du site). Vous
+            pouvez aussi importer un ensemble de composants sous forme de json
+            (cela remplacera les composants existants) créés par un utilisateur
+            qui aura sauvegardé ses composants ou créés par une IA en se basant
+            sur la structure d'un composant dans le fichier
+            "component-template.json" à la racine de l'application.
+          </p>
+          <h2>2 - Créer un site</h2>
+          <p>
+            Vous pouvez créer un site à partir de zéro ou en dupliquant un
+            modèle de site (template) pour créer un nouveau site. Vous pouvez
+            aussi importer un site sous forme de json (cela remplacera les sites
+            existants). Vous pouvez mettre toutes les ressources (image, données
+            json, font, ...) nécessaires dans dossier "ressource" à la racine de
+            l'application, elles seront automatiquement incluses dans le site à
+            condition de les appeler en précedent le nom du fichier par
+            "/ressource/".
+          </p>
+          <h2>3 - Builder le site</h2>
+          <p>
+            Après avoir finir la création de votre site, sauvegardez et buildez
+            et c'est fait ! votre site statique est prêt à être héberger, il
+            n'y'a plus rien à toucher dans le build.
+          </p>
+          <h1 id="stack" class="text-center p-3">
+            <u>Sous le capot</u>
+          </h1>
+          <p>
+            Cette application est executée totalement au coté client. Aucune
+            dépendances externes. Comme base de données, elle utilise indexedDB
+            (dexieDB) et le sessionStorage pour stocker les données des
+            composants et des sites. Elle utilise bootstrap pour l'interface et
+            AOS (Animation On Scroll) par defaut (expérimentale) pour les
+            animations de vos sites. Le formatage des codes est fait par la
+            librairie "Beautify" et le build par les libraires "JSZip" et
+            "FileSaver". L'application est écrite en JavaScript pur (ES6) et
+            HTML5.
+          </p>
+          <h1 id="video" class="text-center p-3">
+            <u>Vidéo de test</u>
+            <!-- je vais l'inclure après, avant la publication -->
+          </h1>
+          <h1 id="last" class="text-center p-3">
+            <u>Note</u>
+          </h1>
+          <p>
+            QSWSB a été créer dans le cadre d'allier la codage classique comme
+            on pourrait le faire sur VSCODE avec la conception visuelle de site
+            web. Tout sites statiques que vous pouvez faire avec un éditeur de
+            code classique vous pouvez le faire avec QSWSB avec en plus la
+            possibilité de créer vos pages visuellement avec les composants que
+            vous avez créés. Je me suis inspiré un peu de React surtout pour
+            l'aspect composant =). Je ne suis pas un expert en développement
+            web, je suis encore en apprentissage, J'acceuillerai tout avis et
+            critique sur cette application.
+          </p>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

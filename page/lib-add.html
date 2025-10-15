@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>QuickStaticWebSiteBuilder - librairie</title>
+    <link rel="icon" href="/favicon.png" type="image/x-icon" />
+    <link rel="stylesheet" href="../asset/bootstrap.min.css" />
+    <script src="../asset/bootstrap.bundle.min.js"></script>
+    <script src="../asset/beautify.min.js"></script>
+    <script src="../asset/beautify-html.min.js"></script>
+    <style>
+      #block-view * {
+        padding: 10px;
+        margin: 10px;
+        background-color: orange;
+        color: white;
+        border-radius: 10px;
+        border: 2px solid black;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container-sm">
+      <div class="d-flex g-0 justify-content-center align-items-center m-5">
+        <!-- Étape 1 : Saisie du code HTML -->
+        <div class="p-3 border border-2 border-secondary shadow rounded w-100">
+          <a class="btn btn-primary mb-2" href="/"
+            >Retour à la page d'accueil</a
+          >
+          <h4>Ajout d'une librairie</h4>
+          <p>
+            Cette librairie pourra être utilisée pour tout vos projets et
+            composants
+          </p>
+
+          <div class="mb-3">
+            <label class="form-label">Entrez le nom de la librairie</label>
+            <input
+              type="text"
+              class="form-control"
+              id="lib_name"
+              placeholder="Nom de la librairie"
+            />
+          </div>
+
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="lib_type" />
+            <label class="form-check-label" for=""> Ajouter via un lien </label>
+          </div>
+
+          <div class="mb-3">
+            <label for="" class="form-label"
+              >Charger le fichier de la librairie</label
+            >
+            <input type="file" class="form-control" id="lib_file" />
+          </div>
+
+          <div class="mb-3">
+            <label for="" class="form-label"
+              >Entrer le lien de la librairie</label
+            >
+            <textarea
+              id="lib_link"
+              class="form-control"
+              placeholder="<script src:'https://cdnjs...'></script>"
+            ></textarea>
+          </div>
+
+          <button class="my-2 btn btn-primary" onclick="addOrUpdateLib()">
+            Soumettre
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Script principal -->
+    <script src="../asset/dexie.min.js"></script>
+    <script src="../asset/app/db.js"></script>
+    <script src="../asset/app/add_lib.js"></script>
+  </body>
+</html>

@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>QuickStaticWebSiteBuilder</title>
+    <link rel="stylesheet" href="asset/bootstrap.min.css" />
+    <link rel="icon" href="/favicon.png" type="image/x-icon" />
+    <script src="asset/bootstrap.bundle.min.js"></script>
+    <script src="asset/beautify.min.js"></script>
+  </head>
+  <body>
+    <!-- popup : composant -->
+    <div
+      class="modal fade"
+      id="component-menu"
+      data-bs-backdrop="static"
+      data-bs-keyboard="false"
+      tabindex="-1"
+      aria-labelledby="staticBackdropLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-centered modal-md">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="staticBackdropLabel">
+              Gérer les composants
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <button class="btn btn-primary my-2" onclick="createComponent()">
+              Créer un nouveau composant
+            </button>
+            <hr />
+            <div class="mb-3">
+              <label for="" class="form-label"
+                >Charger un pack de composant (.json)
+              </label>
+              <input type="file" class="form-control" id="loadcpn" />
+            </div>
+            <hr />
+            <div class="mb-3">
+              <button class="btn btn-primary" onclick="saveComponentPack()">
+                Sauvegarder les composants
+              </button>
+            </div>
+            <hr />
+            <div class="row gap-3 my-3 align-items-center">
+              <div class="col-md"><h5>Editer un composant</h5></div>
+              <div class="col-md">
+                <label>Recherche:</label>
+                <input
+                  type="search"
+                  id="searchComponent"
+                  class="form-control"
+                />
+              </div>
+            </div>
+
+            <div
+              class="row align-items-center overflow-y-auto border border-2 border-secondary rounded"
+              style="height: 300px"
+              id="component-list"
+            ></div>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Fermer
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- popup : lib -->
+    <div
+      class="modal fade"
+      id="lib-menu"
+      data-bs-backdrop="static"
+      data-bs-keyboard="false"
+      tabindex="-1"
+      aria-labelledby="staticBackdropLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-centered modal-md">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="staticBackdropLabel">
+              Gérer les librairie
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <button class="btn btn-primary my-2" onclick="addLib()">
+              Ajouter une nouvelle librairie
+            </button>
+            <hr />
+            <div class="row gap-3 my-3 align-items-center">
+              <div class="col-md"><h5>Listes des libraires installées</h5></div>
+              <div class="col-md">
+                <label>Recherche:</label>
+                <input type="search" id="searchLib" class="form-control" />
+              </div>
+            </div>
+
+            <div
+              class="row align-items-center overflow-y-auto border border-2 border-secondary rounded"
+              style="height: 300px"
+              id="lib-list"
+            ></div>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Fermer
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- popup : site -->
+    <div
+      class="modal fade"
+      id="site-menu"
+      data-bs-backdrop="static"
+      data-bs-keyboard="false"
+      tabindex="-1"
+      aria-labelledby="staticBackdropLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-centered modal-md">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="staticBackdropLabel">
+              Charger un site
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="" class="form-label"
+                >Charger un pack de site (.json)
+              </label>
+              <input type="file" class="form-control" id="loadsite" />
+            </div>
+            <hr />
+            <div class="mb-3">
+              <button class="btn btn-primary" onclick="saveSitePack()">
+                Sauvegarder les sites
+              </button>
+            </div>
+            <hr />
+            <div class="my-3">
+              <label>Recherche:</label>
+              <input type="search" id="searchSite" class="form-control" />
+            </div>
+            <div
+              class="row align-items-center overflow-y-auto border border-2 border-secondary rounded"
+              style="height: 300px"
+              id="site-list"
+            ></div>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Fermer
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- body -->
+    <div class="container-sm">
+      <div class="d-flex g-0 justify-content-center align-items-center m-5">
+        <div
+          class="rounded-start shadow border border-2 border-dark p-3 bg-light"
+          style="z-index: 100"
+        >
+          <h1>
+            <span class="text-primary">Quick</span><br /><span
+              class="text-secondary"
+              >Static</span
+            ><br /><span class="text-success">WebSite</span><br />Builder
+          </h1>
+        </div>
+        <div
+          class="row p-3 border border-2 border-secondary shadow rounded-end"
+        >
+          <a
+            class="card btn btn-primary m-2 col-md"
+            href="page/site-editor.html"
+            onclick="sessionStorage.setItem('editsite',null)"
+          >
+            <div class="card-body">
+              <h6 class="card-title">Créer un site</h6>
+            </div>
+          </a>
+          <button
+            class="card btn btn-primary m-2 col-md"
+            data-bs-toggle="modal"
+            data-bs-target="#site-menu"
+          >
+            <div class="card-body">
+              <h6 class="card-title">Charger un site</h6>
+            </div>
+          </button>
+          <button
+            class="card btn btn-primary m-2 col-md"
+            data-bs-toggle="modal"
+            data-bs-target="#component-menu"
+          >
+            <div class="card-body">
+              <h6 class="card-title">Gérer les composants</h6>
+            </div>
+          </button>
+          <button
+            class="card btn btn-primary m-2 col-md"
+            data-bs-toggle="modal"
+            data-bs-target="#lib-menu"
+          >
+            <div class="card-body">
+              <h6 class="card-title">Gérer les librairies</h6>
+            </div>
+          </button>
+          <a class="card btn btn-primary m-2 col-md" href="page/doc.html">
+            <div class="card-body">
+              <h6 class="card-title">Guide et reference</h6>
+            </div>
+          </a>
+        </div>
+      </div>
+    </div>
+    <script src="asset/dexie.min.js"></script>
+    <script src="asset/app/db.js"></script>
+    <script src="asset/app/index.js"></script>
+  </body>
+</html>
