@@ -57,9 +57,7 @@
             </div>
           </div>
         </div>
-
         <!-- Librairie selection popup -->
-
         <!-- Modal Body-->
         <div
           class="modal fade"
@@ -97,7 +95,6 @@
                       >Chercher une librairie</small
                     >
                   </div>
-
                   <div class="table-responsive">
                     <table class="table table-primary">
                       <thead>
@@ -148,7 +145,6 @@
             </div>
           </div>
         </div>
-
         <!-- Étape 1 : Saisie du code HTML -->
         <div
           class="p-3 border border-2 border-secondary shadow rounded w-100"
@@ -195,7 +191,6 @@
               placeholder="Copier le code js du composant ici"
             ></textarea>
           </div>
-
           <div class="d-grid gap-2">
             <button
               type="button"
@@ -211,7 +206,6 @@
               Aucune librairie
             </ul>
           </div>
-
           <button class="my-2 btn btn-primary" onclick="beautify()">
             Formatter
           </button>
@@ -219,7 +213,6 @@
             Soumettre
           </button>
         </div>
-
         <!-- Étape 2 : Édition du composant -->
         <div
           class="p-3 border border-2 border-secondary shadow rounded w-100"
@@ -247,9 +240,7 @@
               </button>
             </div>
           </div>
-
           <h4>Édition du composant</h4>
-
           <h5>Données générales du composant</h5>
           <div class="mb-3">
             <label class="form-label">Nom du composant</label>
@@ -266,20 +257,16 @@
 it's component description</textarea
             >
           </div>
-
           <hr />
-
           <h5>Edition des paramettres du composant</h5>
           <div id="edit-component-param"></div>
-
           <hr />
-
-          <h5>Resultat</h5>
+          <hr />
           <div class="d-grid gap-2">
             <button
               type="button"
               class="btn btn-primary"
-              onclick="copyToClipboardFallback()"
+              onclick="saveComponent()"
             >
               Sauvegarder
             </button>
@@ -287,7 +274,6 @@ it's component description</textarea
         </div>
       </div>
     </div>
-
     <!-- Script principal -->
     <script src="../asset/dexie.min.js"></script>
     <script src="../asset/app/db.js"></script>

@@ -323,7 +323,7 @@ function delComponentChoice(element, index) {
 // =======================
 // Sauvegarde / copie
 // =======================
-async function copyToClipboardFallback() {
+async function saveComponent() {
   const component_name = document.querySelector("#component-name")?.value || "";
   updateComponentParamAll();
 
