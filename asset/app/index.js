@@ -299,7 +299,7 @@ document.getElementById("loadlib").addEventListener("change", function (event) {
 
         // Mise à jour finale
         libdt = newdt;
-        addOrUpdateData("component", libdt);
+        addOrUpdateData("lib", libdt);
 
         alert("Composants chargés avec succès !");
         renderLibList();

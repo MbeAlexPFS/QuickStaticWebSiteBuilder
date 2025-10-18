@@ -1098,8 +1098,14 @@ function renderComponent(data, isRealView = false) {
   let defaultCSS = null;
   let customCSS = null;
   if (renderCSS && renderCSS.trim() !== "") {
-    defaultCSS = `.component-classname-${data.component} {${computedOldCSS}}`;
-    customCSS = customRender.css ? `#${data.id} {${renderCSS}}` : null;
+    defaultCSS = scopeComponentCSS(
+      `.component-classname-${data.component}`,
+      computedOldCSS,
+      data["html-code"]
+    );
+    customCSS = customRender.css
+      ? scopeComponentCSS(`#${data.id}`, renderCSS, data["html-code"])
+      : null;
   }
 
   // format JS

@@ -89,6 +89,14 @@ async function submitCode() {
     return alert("Les paramètres doivent être uniques.");
   }
 
+  for (let key of Object.keys(paramsComponent)) {
+    if (key in params) {
+      continue;
+    } else {
+      delete paramsComponent[key];
+    }
+  }
+
   cdeComponent = html;
   cdeCSSComponent = css;
   cdeJSComponent = js;
@@ -494,9 +502,15 @@ async function updateRealView(data /* objet composant */) {
   // Génère rendu une fois
   const [htmlBody, cssBody, jsBody] = renderComponent(data);
 
+  // Vérifie s'il y a au moins un sélecteur CSS (un "{" dans le texte)
+
   const cssLinks =
     cssBody.trim() !== ""
-      ? `<style> #component-preview {${cssBody}} </style>`
+      ? `<style> ${scopeComponentCSS(
+          "#component-preview",
+          cssBody,
+          data["html-code"]
+        )} </style>`
       : "";
 
   const jsScripts =
