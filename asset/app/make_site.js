@@ -1,12 +1,66 @@
-// ========================== Site Configuration ============================= //
+// make_site.js
+// Refactorisé: sécurisé + optimisé (préserve la logique originale)
+
+// ========================== Utilitaires ============================= //
+const $ = (sel, root = document) => root.querySelector(sel);
+const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+const id = (i) => document.getElementById(i);
+const showAlert = (msg) => alert(msg);
+
+// Extraction regex (retourne valeurs sans {* *})
+const extractClassTokens = (input = "") => {
+  if (!input) return [];
+  const re = /\{\*([A-Za-z0-9]+)\*\}/g;
+  const set = new Set();
+  let m;
+  while ((m = re.exec(input)) !== null) set.add(m[1]);
+  return Array.from(set);
+};
+
+// isHTML vérification simplifiée
+const isHTML = (str = "") => /<\/?[a-z][\s\S]*>/i.test(str);
+
+// -------------------------- Promise-based listFiles -------------------------
+// NOTE: retourne un objet: { filename: content, ... }
+async function listFiles(folder) {
+  const list = {};
+  try {
+    const resp = await fetch(folder);
+    const text = await resp.text();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(text, "text/html");
+    const fileLinks = doc.querySelectorAll(".view-tiles a");
+
+    // Fetch all files in parallel (limited to those not '..')
+    const fetches = Array.from(fileLinks)
+      .filter((a) => a.title !== "..")
+      .map(async (a) => {
+        try {
+          const r = await fetch(a.href);
+          const dt = await r.text();
+          if (!isHTML(dt)) list[a.title] = dt;
+        } catch (e) {
+          // ignore failures per-file but log
+          console.error("file fetch failed:", a.href, e);
+        }
+      });
+
+    await Promise.all(fetches);
+  } catch (e) {
+    console.error("Error fetching file list:", e);
+  }
+  return list;
+}
+
+// ========================== Globals / State ============================= //
 let globalJSFiles = [];
 let globalCSSFiles = [];
 let sitePages = [];
-let componentData;
-let libData;
+let componentData = {};
+let libData = {};
 
-var library = [];
-var requiredLibrary = new Set();
+let library = [];
+const requiredLibrary = new Set();
 
 // Editor data
 let selectedPage = "";
@@ -16,107 +70,66 @@ let selectedComponent = "";
 let editorInputID = "";
 let record = 0;
 
-// DOM elements
+// Cached DOM nodes
 const element = {
-  site: document.querySelector("#site-form"),
-  page: document.querySelector("#site-page-editor"),
+  site: $("#site-form"),
+  page: $("#site-page-editor"),
 };
 
 const elPageEditor = {
-  view: document.querySelector("#page-view"),
-  form: document.querySelector("#element-form"),
-  root: document.querySelector("#root-form"),
-  selected: document.querySelector("#selected-element"),
-  selectedComponent: document.querySelector("#selected-component"),
-  emptyParam: document.querySelector("#element-empty-param"),
-  emptyParamForm: document.querySelector("#form-empty-param"),
-  paramForm: document.querySelector("#element-param-form"),
-  anim: document.querySelector("#element-onview-anim"),
-  component: document.querySelector("#component-selector"),
-  copied: document.querySelector("#copied-element"),
-  copiedForm: document.querySelector("#element-copied-form"),
-  viewed: document.querySelector("#page"),
-  realView: document.querySelector("#realview"),
-  addLib: document.querySelector("#lib-add"),
-  searchLib: document.querySelector("#lib-search"),
+  view: $("#page-view"),
+  form: $("#element-form"),
+  root: $("#root-form"),
+  selected: $("#selected-element"),
+  selectedComponent: $("#selected-component"),
+  emptyParam: $("#element-empty-param"),
+  emptyParamForm: $("#form-empty-param"),
+  paramForm: $("#element-param-form"),
+  anim: $("#element-onview-anim"),
+  component: $("#component-selector"),
+  copied: $("#copied-element"),
+  copiedForm: $("#element-copied-form"),
+  viewed: $("#page"),
+  realView: $("#realview"),
+  addLib: $("#lib-add"),
+  searchLib: $("#lib-search"),
 };
 
-// Extraction regex (retourne les valeurs sans {* *})
-const extractClassTokens = (input) => {
-  const matches = [...input.matchAll(/\{\*([A-Za-z0-9]+)\*\}/g)];
-  let param1 = matches.map((m) => m[1]);
-  let param2 = [];
-  for (const p1 of param1) {
-    param2.includes(p1) ? "" : param2.push(p1);
-  }
-  return param2;
-};
-
-//Fonctions permettant l'enumération des fichiers dans un dossier spécifique
-//verification tool
-function isHTML(str) {
-  const regex = /<\/?[a-z][\s\S]*>/i;
-  return regex.test(str);
-}
-
-//function to list all files in a directory in client side -- must use timeOut to use data
-function listFiles(folder) {
-  let list = {};
-  fetch(folder)
-    .then((response) => response.text())
-    .then((data) => {
-      //text to html
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(data, "text/html");
-      //extract the file list and recursively if folder inside
-      const fileList = doc.querySelector(".view-tiles").querySelectorAll("a");
-      fileList.forEach((file) => {
-        let href = file.href;
-        fetch(href)
-          .then((response) => response.text())
-          .then((data) => {
-            if (file.title !== "..") {
-              if (!isHTML(data)) {
-                list[file.title] = data;
-              }
-            }
-          });
-      });
-    })
-    .catch((error) => console.error("Error fetching file list:", error));
-  return list;
-}
-
-// ========================== Asynchrone : Initialisation ============================= //
+// ========================== Data load/save helpers ============================= //
+// (on suppose l'existence de loadData / addOrUpdateData dans le contexte)
+// Si elles n'existent pas, on peut stubber -> ici on les appelle comme avant.
 
 async function initSiteEditor() {
-  // Chargement asynchrone des composants
   componentData = (await loadData("component")) || {};
   libData = (await loadData("lib")) || {};
 
-  // Chargement asynchrone du site à éditer si présent
-  if (sessionStorage.getItem("editsite") !== "null") {
-    let site = sessionStorage.getItem("editsite");
-    let data = (await loadData("site")) || {};
-    document.querySelector("#site-name").value = data[site].name;
-    document.querySelector("#site-desc").value = data[site].desc;
-    document.querySelector("#site-lang").value = data[site].lang;
-    document.querySelector("#site-meta").value = data[site].meta;
-    library = data[site].lib;
-    globalCSSFiles = data[site].css;
-    globalJSFiles = data[site].js;
-    sitePages = data[site].content;
-    record = data[site].record;
-    updatePageForm();
-    renderGlobalCodeCSS();
-    renderGlobalCodeJS();
-    renderPageSelector();
-    renderPages();
-    checklibDependance();
-    alert("page chargé avec succès");
+  // Chargement asynchrone du site si présent dans sessionStorage
+  const editSiteKey = sessionStorage.getItem("editsite");
+  if (editSiteKey && editSiteKey !== "null") {
+    const siteKey = editSiteKey;
+    const allSites = (await loadData("site")) || {};
+    if (allSites[siteKey]) {
+      const data = allSites[siteKey];
+      $("#site-name").value = data.name || "";
+      $("#site-desc").value = data.desc || "";
+      $("#site-lang").value = data.lang || "";
+      $("#site-meta").value = data.meta || "";
+      library = Array.isArray(data.lib) ? [...data.lib] : [];
+      globalCSSFiles = Array.isArray(data.css) ? [...data.css] : [];
+      globalJSFiles = Array.isArray(data.js) ? [...data.js] : [];
+      sitePages = Array.isArray(data.content) ? [...data.content] : [];
+      record = data.record || 0;
+
+      updatePageForm();
+      renderGlobalCodeCSS();
+      renderGlobalCodeJS();
+      renderPageSelector();
+      renderPages();
+      checklibDependance();
+      showAlert("page chargé avec succès");
+    }
   }
 
-  // Initialisation de l'interface
   show("site");
   updateRealView();
   updatePageForm();
@@ -126,7 +139,7 @@ async function initSiteEditor() {
 
 document.addEventListener("DOMContentLoaded", initSiteEditor);
 
-// ============================ Navigation ============================
+// ============================ Navigation ============================ //
 function show(page, pageSelection = null) {
   Object.keys(element).forEach((pg) => {
     element[pg].classList.toggle("d-none", pg !== page);
@@ -134,202 +147,179 @@ function show(page, pageSelection = null) {
 
   if (pageSelection !== null) {
     selectedPage = pageSelection;
-
     renderPageSelector();
-    let headerData = renderPagesView();
+    const headerData = renderPagesView();
 
-    //initialise le iframe pour chaque page
-    let page = sitePages.find((pg) => pg.name === selectedPage);
+    // initialise iframe pour la page sélectionnée
+    const pageObj = sitePages.find((pg) => pg.name === selectedPage);
+    if (!pageObj) return;
+
+    // Construire head HTML optimisé
+    const libsHtml = buildLibInclusionHTML(pageObj.include.lib, libData);
+    const requiredLibsHtml = buildLibInclusionHTML(
+      pageObj.include["lib-required"],
+      libData
+    );
+
+    const cssInline = Object.keys(pageObj.include.css)
+      .flatMap((css_name) =>
+        globalCSSFiles
+          .filter((css) => css.name === css_name)
+          .map((css) => `<style>${css.content}</style>`)
+      )
+      .join("");
 
     elPageEditor.view.contentDocument.head.innerHTML =
       `<meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link rel="stylesheet" href="/asset/aos.css">
-        <script src="/asset/aos.js"></script>
-        <style>
-            .component-element {
-                border: 2px solid dodgerblue;
-                border-style: dashed;
-                padding: 5px;
-            }
-        
-            .component-element:hover {
-                background-color: var(--bs-light);
-                cursor: pointer;
-            }
-            .component-element-selected {
-                border: 2px solid purple;
-                box-shadow: 0 0 10px rgb(30, 0, 255);
-                padding: 4px;
-                border-radius: 4px;
-            }
-        
-            .component-element-debug-name {
-                color: dodgerblue;
-            }
-        </style>` +
-      Object.keys(page.include.lib)
-        .flatMap((lib_name) =>
-          Object.keys(libData).map((key) =>
-            key === lib_name
-              ? libData[key].type
-                ? libData[key].link
-                : libData[key].file
-              : ""
-          )
-        )
-        .join("") +
-      page.include["lib-required"]
-        .flatMap((lib_name) =>
-          Object.keys(libData).map((key) =>
-            key === lib_name
-              ? libData[key].type
-                ? libData[key].link
-                : libData[key].file
-              : ""
-          )
-        )
-        .join("") +
-      Object.keys(page.include.css)
-        .flatMap((css_name) =>
-          globalCSSFiles
-            .filter((css) => css.name === css_name)
-            .map((css) => `<style>${css.content}</style>`)
-        )
-        .join("") +
-      (page.css ? `<style>${page.css}</style>` : "") +
+       <meta name="viewport" content="width=device-width, initial-scale=1.0">
+       <link rel="stylesheet" href="/asset/aos.css">
+       <script src="/asset/aos.js"></script>
+       <style>
+         .component-element { border: 2px dashed dodgerblue; padding: 5px; }
+         .component-element:hover { background-color: var(--bs-light); cursor: pointer; }
+         .component-element-selected { border: 2px solid purple; box-shadow: 0 0 10px rgb(30, 0, 255); padding: 4px; border-radius: 4px; }
+         .component-element-debug-name { color: dodgerblue; }
+       </style>` +
+      libsHtml +
+      requiredLibsHtml +
+      cssInline +
+      (pageObj.css ? `<style>${pageObj.css}</style>` : "") +
       headerData;
 
+    // click handling: select nearest .component-element
     elPageEditor.view.contentDocument.body.onclick = (e) => {
-      if (e.target.tagName === "A" || e.target.closest("a")) {
-        e.preventDefault(); // Bloque la navigation
-      }
-      // On remonte jusqu'au composant le plus proche contenant un ID
+      if (e.target.tagName === "A" || e.target.closest("a")) e.preventDefault();
       const target = e.target.closest(".component-element");
       if (target && target.dataset.id) {
-        e.stopPropagation(); // empêche les clics parents de se déclencher en double
+        e.stopPropagation();
         selectElement(target.dataset.id);
       }
     };
   }
 }
 
-// ======================== Editeur de code ===========================
+// helper: build lib inclusion html (simple)
+function buildLibInclusionHTML(libMapOrArray, libDataRef) {
+  if (!libMapOrArray) return "";
+  const keys = Array.isArray(libMapOrArray)
+    ? libMapOrArray
+    : Object.keys(libMapOrArray);
+  return keys
+    .flatMap((lib_name) =>
+      Object.keys(libDataRef || {}).map((key) =>
+        key === lib_name
+          ? libDataRef[key].type
+            ? libDataRef[key].link
+            : libDataRef[key].file
+          : ""
+      )
+    )
+    .join("");
+}
+
+// ======================== Editeur de code =========================== //
 function openEditor(label, inputID) {
-  const editorModal = new bootstrap.Modal(
-    document.getElementById("codeEditor")
-  );
+  const modalEl = document.getElementById("codeEditor");
+  const editorModal = new bootstrap.Modal(modalEl);
   editorModal.show();
-  document.getElementById("codeEditorLabel").textContent = label;
+  $("#codeEditorLabel").textContent = label;
   editorInputID = inputID;
-  document.querySelector("#codeEditor").querySelector("textarea").value =
-    document.querySelector(editorInputID).value;
+  const ta = $("#codeEditor").querySelector("textarea");
+  ta.value = document.querySelector(editorInputID).value;
+  ta.focus();
 }
 
 function beautify() {
-  document.querySelector("#codeEditor").querySelector("textarea").value =
-    autoBeautify(
-      document.querySelector("#codeEditor").querySelector("textarea").value
-    );
-  document.querySelector(editorInputID).value = document
-    .querySelector("#codeEditor")
-    .querySelector("textarea").value;
+  const ta = $("#codeEditor").querySelector("textarea");
+  ta.value = autoBeautify(ta.value);
+  document.querySelector(editorInputID).value = ta.value;
 }
 
-document.querySelector("#codeEditor").querySelector("textarea").oninput =
-  () => {
-    document.querySelector(editorInputID).value = document
-      .querySelector("#codeEditor")
-      .querySelector("textarea").value;
-  };
+$("#codeEditor").querySelector("textarea").oninput = () => {
+  document.querySelector(editorInputID).value =
+    $("#codeEditor").querySelector("textarea").value;
+};
 
-// ============================ Sauvegarde du site ============================
+// ============================ Sauvegarde du site ============================ //
 async function saveSite() {
-  let site = {
-    name: document.querySelector("#site-name").value,
-    desc: document.querySelector("#site-desc").value,
-    lang: document.querySelector("#site-lang").value,
-    meta: document.querySelector("#site-meta").value,
+  const site = {
+    name: $("#site-name").value.trim(),
+    desc: $("#site-desc").value.trim(),
+    lang: $("#site-lang").value.trim(),
+    meta: $("#site-meta").value.trim(),
     lib: library,
     js: globalJSFiles,
     css: globalCSSFiles,
     content: sitePages,
-    record: record,
+    record,
   };
-  if (site.name.trim() == "") {
-    alert("veuillez assigner un nom au site");
-    return "error";
-  } else {
-    let data = (await loadData("site")) || {};
-    let res;
-    if (
-      Object.keys(data).includes(site.name) &&
-      sessionStorage.getItem("editsite") === "null"
-    ) {
-      alert("Erreur: un site avec le même nom existe déjà");
-      return;
-    }
-    data[site.name] = site;
 
-    await addOrUpdateData("site", data);
+  if (!site.name) return showAlert("veuillez assigner un nom au site");
+  const data = (await loadData("site")) || {};
+
+  const editingNull = sessionStorage.getItem("editsite") === "null";
+  if (Object.keys(data).includes(site.name) && editingNull) {
+    return showAlert("Erreur: un site avec le même nom existe déjà");
   }
+
+  data[site.name] = site;
+  await addOrUpdateData("site", data);
+  showAlert("Site sauvegardé");
 }
 
-// ============================ Page Selector ============================
+// ============================ Page Selector ============================ //
 function renderPageSelector() {
-  const elPageSelector = document.querySelector("#page-selector");
-  const previewName = document.querySelector("#page-name-editing");
+  const elPageSelector = $("#page-selector");
+  const previewName = $("#page-name-editing");
 
-  elPageSelector.innerHTML = "";
-
-  sitePages.forEach((pg) => {
-    const buttonClass = pg.name === selectedPage ? "warning" : "danger";
-    elPageSelector.innerHTML += `
-            <button type="button" class="btn btn-${buttonClass}" onclick="show('page','${pg.name}')">
-                ${pg.name}
-            </button>`;
-  });
+  elPageSelector.innerHTML = sitePages
+    .map(
+      (pg) =>
+        `<button type="button" class="btn btn-${
+          pg.name === selectedPage ? "warning" : "danger"
+        }" onclick="show('page','${escapeQuotes(pg.name)}')">${
+          pg.name
+        }</button>`
+    )
+    .join("");
 
   previewName.textContent = selectedPage;
 }
 
-// ============================ Library ============================
+function escapeQuotes(s) {
+  return String(s).replace(/'/g, "\\'").replace(/"/g, '\\"');
+}
+
+// ============================ Library ============================ //
 function checklibDependance() {
   requiredLibrary.clear();
-  sitePages.forEach((pg) => {
+  for (const pg of sitePages) {
     const pageLibs = [];
-    pg.data.forEach((data) => {
-      pageLibs.push(...checkComponentLib(data));
-    });
-
-    pg.include["lib-required"] = [];
-    pageLibs.forEach((lib) => {
-      requiredLibrary.add(lib);
-      pg.include["lib-required"].push(lib);
-    });
-    pg.include["lib-required"] = Array.from(
-      new Set(pg.include["lib-required"])
-    );
-
-    Object.keys(pg.include["lib"]).forEach((pglib) => {
+    for (const data of pg.data) pageLibs.push(...checkComponentLib(data));
+    pg.include["lib-required"] = Array.from(new Set(pageLibs));
+    // cleanup unused libs from include.lib
+    Object.keys(pg.include["lib"] || {}).forEach((pglib) => {
       if (!requiredLibrary.has(pglib) && !library.includes(pglib)) {
         delete pg.include["lib"][pglib];
       }
     });
-  });
-
+    // collect into requiredLibrary set
+    pg.include["lib-required"].forEach((l) => requiredLibrary.add(l));
+  }
   updateLib();
 }
 
 function checkComponentLib(data) {
-  let render = data["html-code"];
-  let childLib = [];
+  // returns array of libs used by data and children
+  const childLib = [];
+  const render = data["html-code"] || "";
   extractClassTokens(render).forEach((param) => {
-    const [label, type, value] = data.param[param];
+    const p = data.param[param];
+    if (!p) return;
+    const [label, type, value] = p;
     if (type === "empty" && Array.isArray(value)) {
       value.forEach((child) => {
-        const nestedLibs = checkComponentLib(child);
-        childLib.push(...nestedLibs);
+        childLib.push(...checkComponentLib(child));
       });
     }
   });
@@ -337,219 +327,207 @@ function checkComponentLib(data) {
 }
 
 function updateLib() {
-  const libList = document.querySelector("#lib-select")?.querySelector("tbody");
-  const libIncludeList = document.querySelector("#lib-include-list");
-  if (!libList || !libIncludeList || !libData) return;
+  const libListBody = $("#lib-select")?.querySelector("tbody");
+  const libIncludeList = $("#lib-include-list");
+  if (!libListBody || !libIncludeList || !libData) return;
 
-  libList.innerHTML = "";
+  libListBody.innerHTML = "";
   libIncludeList.innerHTML = "";
 
   Object.keys(libData).forEach((libName) => {
     if (libName.includes(elPageEditor.searchLib?.value || "")) {
-      libList.insertAdjacentHTML(
+      const checkedAndDisabled = requiredLibrary.has(libName)
+        ? "checked disabled"
+        : library.includes(libName)
+        ? "checked"
+        : "";
+      const action = library.includes(libName) ? "delete" : "add";
+
+      libListBody.insertAdjacentHTML(
         "beforeend",
         `<tr>
-          <td scope="row">${libName}${
+            <td scope="row">${libName}${
           requiredLibrary.has(libName) ? " (inclus automatiquement) " : ""
         }</td>
-          <td>
-            <div class="form-check form-switch">
-              <input
-                class="form-check-input"
-                type="checkbox"
-                ${
-                  requiredLibrary.has(libName)
-                    ? "checked disabled"
-                    : library.includes(libName)
-                    ? "checked"
-                    : ""
-                }
-                
-                oninput=libAction("${
-                  library.includes(libName) ? "delete" : "add"
-                }","${libName}")
-              />
-            </div>
-          </td>
+            <td>
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" ${checkedAndDisabled} oninput="libAction('${action}','${escapeQuotes(
+          libName
+        )}')" />
+              </div>
+            </td>
         </tr>`
       );
     }
+
     if (library.includes(libName) || requiredLibrary.has(libName)) {
       libIncludeList.insertAdjacentHTML("beforeend", `<li>${libName}</li>`);
     }
   });
 
-  if (libIncludeList.innerHTML === "") {
+  if (!libIncludeList.innerHTML)
     libIncludeList.innerHTML = `Aucune librairie incluse`;
-  }
 
   renderPages();
 }
 
-if (elPageEditor.searchLib) {
-  elPageEditor.searchLib.oninput = () => updateLib();
-}
+if (elPageEditor.searchLib) elPageEditor.searchLib.oninput = () => updateLib();
 
 function libAction(action, lib) {
   if (action === "add") {
     if (!library.includes(lib)) library.push(lib);
-    checklibDependance();
-    updateLib();
-    return;
+  } else {
+    library = library.filter((item) => item !== lib);
   }
-  library = library.filter((item) => item !== lib);
   checklibDependance();
   updateLib();
 }
 
-// ============================ JS ============================
+// ============================ JS ============================ //
 function addGlobalCodeJS() {
-  const name = document.getElementById("global-js-name").value.trim();
-  const content = document.getElementById("global-js-content").value.trim();
+  const nameInput = id("global-js-name");
+  const contentInput = id("global-js-content");
+  const name = nameInput.value.trim();
+  const content = contentInput.value.trim();
 
-  if (!name || !content) {
-    return alert("Remplir tous les champs JS");
-  } else if (globalJSFiles.find((gljs) => gljs.name === name)) {
-    return alert("Cet script existe déjà");
-  }
+  if (!name || !content) return showAlert("Remplir tous les champs JS");
+  if (globalJSFiles.find((g) => g.name === name))
+    return showAlert("Cet script existe déjà");
 
-  globalJSFiles.push({
-    id: Date.now(),
-    name,
-    content,
-  });
+  globalJSFiles.push({ id: Date.now(), name, content });
   renderGlobalCodeJS();
-  document.getElementById("global-js-name").value = "";
-  document.getElementById("global-js-content").value = "";
+  nameInput.value = "";
+  contentInput.value = "";
   renderPages();
 }
 
-function deleteGlobalCodeJS(id) {
-  const index = globalJSFiles.findIndex((f) => f.id === id);
-  if (index !== -1) {
-    const fileName = globalJSFiles[index].name;
-    for (const page of sitePages) {
-      delete page.include["js"][fileName];
-    }
-    globalJSFiles.splice(index, 1);
-    renderGlobalCodeJS();
-    renderPages();
-  }
+function deleteGlobalCodeJS(idVal) {
+  const idx = globalJSFiles.findIndex((f) => f.id === idVal);
+  if (idx === -1) return;
+  const fileName = globalJSFiles[idx].name;
+  for (const page of sitePages) delete page.include["js"][fileName];
+  globalJSFiles.splice(idx, 1);
+  renderGlobalCodeJS();
+  renderPages();
 }
 
 function renderGlobalCodeJS() {
-  const tbody = document.getElementById("globalCodeJSList");
+  const tbody = id("globalCodeJSList");
   tbody.innerHTML = "";
-  globalJSFiles.forEach((file) => {
+  for (const file of globalJSFiles) {
     const tr = document.createElement("tr");
     tr.innerHTML = `
-            <td>${file.name}</td>
-            <td>
-            <div class="input-block w-100">
-                <textarea style="white-space: pre-wrap;" id="code-js-content-${file.id}">${file.content}</textarea>
-                <button class="btn btn-primary input-button" onclick="openEditor('Contenu du fichier javascript : ${file.name}','#code-js-content-${file.id}')">+</button>
-            </div>
-            </td>
-            <td>
-            <button class="btn btn-danger btn-sm" onclick="updateGlobalCodeJS(${file.id})">Mettre à jour</button>
-            <button class="btn btn-danger btn-sm" onclick="deleteGlobalCodeJS(${file.id})">Supprimer</button>
-            </td>
-        `;
+      <td>${file.name}</td>
+      <td>
+        <div class="input-block w-100">
+          <textarea style="white-space: pre-wrap;" id="code-js-content-${
+            file.id
+          }">${file.content}</textarea>
+          <button class="btn btn-primary input-button" onclick="openEditor('Contenu du fichier javascript : ${escapeQuotes(
+            file.name
+          )}','#code-js-content-${file.id}')">+</button>
+        </div>
+      </td>
+      <td>
+        <button class="btn btn-danger btn-sm" onclick="updateGlobalCodeJS(${
+          file.id
+        })">Mettre à jour</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteGlobalCodeJS(${
+          file.id
+        })">Supprimer</button>
+      </td>`;
     tbody.appendChild(tr);
-  });
+  }
 }
 
-function updateGlobalCodeJS(id) {
-  let data = document.querySelector(`#code-js-content-${id}`).value;
-  const index = globalJSFiles.findIndex((f) => f.id === id);
+function updateGlobalCodeJS(idVal) {
+  const data = document.querySelector(`#code-js-content-${idVal}`).value;
+  const index = globalJSFiles.findIndex((f) => f.id === idVal);
   if (index !== -1) {
     globalJSFiles[index].content = data;
     renderGlobalCodeJS();
     renderPages();
-    alert("fichier js global mis à jour avec succès");
+    showAlert("fichier js global mis à jour avec succès");
   }
 }
 
-// ============================ CSS ============================
+// ============================ CSS ============================ //
 function addGlobalCodeCSS() {
-  const name = document.getElementById("global-css-name").value.trim();
-  const content = document.getElementById("global-css-content").value.trim();
+  const name = id("global-css-name").value.trim();
+  const content = id("global-css-content").value.trim();
 
-  if (!name || !content) {
-    return alert("Remplir tous les champs CSS");
-  } else if (globalCSSFiles.find((glcss) => glcss.name === name)) {
-    return alert("Cet style existe déjà");
-  }
+  if (!name || !content) return showAlert("Remplir tous les champs CSS");
+  if (globalCSSFiles.find((g) => g.name === name))
+    return showAlert("Cet style existe déjà");
 
-  globalCSSFiles.push({
-    id: Date.now(),
-    name,
-    content,
-  });
+  globalCSSFiles.push({ id: Date.now(), name, content });
   renderGlobalCodeCSS();
-  document.getElementById("global-css-name").value = "";
-  document.getElementById("global-css-content").value = "";
+  id("global-css-name").value = "";
+  id("global-css-content").value = "";
   renderPages();
 }
 
-function deleteGlobalCodeCSS(id) {
-  const index = globalCSSFiles.findIndex((f) => f.id === id);
-  if (index !== -1) {
-    const fileName = globalCSSFiles[index].name;
-    for (const page of sitePages) {
-      delete page.include["css"][fileName];
-    }
-    globalCSSFiles.splice(index, 1);
-    renderGlobalCodeCSS();
-    renderPages();
-  }
+function deleteGlobalCodeCSS(idVal) {
+  const idx = globalCSSFiles.findIndex((f) => f.id === idVal);
+  if (idx === -1) return;
+  const fileName = globalCSSFiles[idx].name;
+  for (const page of sitePages) delete page.include["css"][fileName];
+  globalCSSFiles.splice(idx, 1);
+  renderGlobalCodeCSS();
+  renderPages();
 }
 
 function renderGlobalCodeCSS() {
-  const tbody = document.getElementById("globalCodeCSSList");
+  const tbody = id("globalCodeCSSList");
   tbody.innerHTML = "";
-  globalCSSFiles.forEach((file) => {
+  for (const file of globalCSSFiles) {
     const tr = document.createElement("tr");
     tr.innerHTML = `
-            <td>${file.name}</td>
-            <td>
-            <div class="input-block w-100">
-                <textarea style="white-space: pre-wrap;" id="code-css-content-${file.id}">${file.content}</textarea>
-                <button class="btn btn-primary input-button" onclick="openEditor('Contenu du fichier css : ${file.name}','#code-css-content-${file.id}')">+</button>
-            </div>
-            </td>
-            <td>
-            <button class="btn btn-danger btn-sm" onclick="updateGlobalCodeCSS(${file.id})">Mettre à jour</button>
-            <button class="btn btn-danger btn-sm" onclick="deleteGlobalCodeCSS(${file.id})">Supprimer</button>
-            </td>
-        `;
+      <td>${file.name}</td>
+      <td>
+        <div class="input-block w-100">
+          <textarea style="white-space: pre-wrap;" id="code-css-content-${
+            file.id
+          }">${file.content}</textarea>
+          <button class="btn btn-primary input-button" onclick="openEditor('Contenu du fichier css : ${escapeQuotes(
+            file.name
+          )}','#code-css-content-${file.id}')">+</button>
+        </div>
+      </td>
+      <td>
+        <button class="btn btn-danger btn-sm" onclick="updateGlobalCodeCSS(${
+          file.id
+        })">Mettre à jour</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteGlobalCodeCSS(${
+          file.id
+        })">Supprimer</button>
+      </td>`;
     tbody.appendChild(tr);
-  });
+  }
 }
 
-function updateGlobalCodeCSS(id) {
-  let data = document.querySelector(`#code-css-content-${id}`).value;
-  const index = globalCSSFiles.findIndex((f) => f.id === id);
+function updateGlobalCodeCSS(idVal) {
+  const data = document.querySelector(`#code-css-content-${idVal}`).value;
+  const index = globalCSSFiles.findIndex((f) => f.id === idVal);
   if (index !== -1) {
     globalCSSFiles[index].content = data;
     renderGlobalCodeCSS();
     renderPages();
-    alert("fichier css global mis à jour avec succès");
+    showAlert("fichier css global mis à jour avec succès");
   }
 }
 
-// ============================ Pages ============================
+// ============================ Pages ============================ //
 function addPage() {
-  const name = document.getElementById("page-name").value.trim();
-  const title = document.getElementById("page-title").value.trim();
-  const js = document.getElementById("page-js").value.trim();
-  const css = document.getElementById("page-css").value.trim();
+  const name = id("page-name").value.trim();
+  const title = id("page-title").value.trim();
+  const js = id("page-js").value.trim();
+  const css = id("page-css").value.trim();
 
-  if (!name || !title) {
-    return alert("Nom du fichier et titre de la page obligatoires");
-  } else if (sitePages.find((pg) => pg.name === name)) {
-    return alert("Cette page existe déjà");
-  }
+  if (!name || !title)
+    return showAlert("Nom du fichier et titre de la page obligatoires");
+  if (sitePages.find((pg) => pg.name === name))
+    return showAlert("Cette page existe déjà");
 
   const page = {
     id: Date.now(),
@@ -557,163 +535,156 @@ function addPage() {
     title,
     js,
     css,
-    include: {
-      lib: {},
-      js: {},
-      css: {},
-      "lib-required": [],
-    },
+    include: { lib: {}, js: {}, css: {}, "lib-required": [] },
     data: [],
   };
 
   sitePages.push(page);
   renderPages();
   renderPageSelector();
-  document.getElementById("page-name").value = "";
-  document.getElementById("page-title").value = "";
-  document.getElementById("page-js").value = "";
-  document.getElementById("page-css").value = "";
+  id("page-name").value = "";
+  id("page-title").value = "";
+  id("page-js").value = "";
+  id("page-css").value = "";
 }
 
-function deletePage(id) {
-  const index = sitePages.findIndex((p) => p.id === id);
-  if (index !== -1) {
-    sitePages.splice(index, 1);
-    renderPages();
-    renderPageSelector();
-  }
+function deletePage(idVal) {
+  const idx = sitePages.findIndex((p) => p.id === idVal);
+  if (idx === -1) return;
+  sitePages.splice(idx, 1);
+  renderPages();
+  renderPageSelector();
 }
 
 function renderPages() {
-  const tbody = document.getElementById("page-list");
+  const tbody = id("page-list");
   tbody.innerHTML = "";
-  sitePages.forEach((page) => {
-    const libCheckboxes = [...library, ...requiredLibrary]
+
+  for (const page of sitePages) {
+    const libs = [...new Set([...library, ...Array.from(requiredLibrary)])]
       .map(
         (lib) => `
-            <div class="form-check">
-                <input
-                    class="form-check-input"
-                    id="page-${page.name}-lib-${lib}"
-                    type="checkbox"
-                    ${
-                      page.include["lib-required"].includes(lib)
-                        ? "checked disabled"
-                        : Object.keys(page.include["lib"]).includes(lib)
-                        ? "checked"
-                        : ""
-                    }
-                    onchange="addInclude('${page.name}', '${lib}', 'lib')"
-                />
-                <label class="form-check-label">${lib}</label>
-            </div>
-        `
+          <div class="form-check">
+            <input class="form-check-input" id="page-${
+              page.name
+            }-lib-${lib}" type="checkbox" ${
+          page.include["lib-required"].includes(lib)
+            ? "checked disabled"
+            : Object.keys(page.include.lib || {}).includes(lib)
+            ? "checked"
+            : ""
+        } onchange="addInclude('${escapeQuotes(page.name)}', '${escapeQuotes(
+          lib
+        )}', 'lib')" />
+            <label class="form-check-label">${lib}</label>
+          </div>`
       )
       .join("");
 
     const jsCheckboxes = globalJSFiles
       .map(
         (gljs) => `
-            <div class="form-check">
-                <input
-                    class="form-check-input"
-                    id="page-${page.name}-js-${gljs.name}"
-                    type="checkbox"
-                    ${
-                      Object.keys(page.include["js"]).includes(gljs.name)
-                        ? "checked"
-                        : ""
-                    }
-                    onchange="addInclude('${page.name}', '${gljs.name}', 'js')"
-                />
-                <label class="form-check-label">${gljs.name}</label>
-            </div>
-        `
+          <div class="form-check">
+            <input class="form-check-input" id="page-${page.name}-js-${
+          gljs.name
+        }" type="checkbox" ${
+          Object.keys(page.include.js || {}).includes(gljs.name)
+            ? "checked"
+            : ""
+        } onchange="addInclude('${escapeQuotes(page.name)}', '${escapeQuotes(
+          gljs.name
+        )}', 'js')" />
+            <label class="form-check-label">${gljs.name}</label>
+          </div>`
       )
       .join("");
 
     const cssCheckboxes = globalCSSFiles
       .map(
         (glcss) => `
-            <div class="form-check">
-                <input
-                    class="form-check-input"
-                    type="checkbox"
-                    id="page-${page.name}-css-${glcss.name}"
-                    ${
-                      Object.keys(page.include["css"]).includes(glcss.name)
-                        ? "checked"
-                        : ""
-                    }
-                    onchange="addInclude('${page.name}', '${
+          <div class="form-check">
+            <input class="form-check-input" id="page-${page.name}-css-${
           glcss.name
-        }', 'css')"
-                />
-                <label class="form-check-label">${glcss.name}</label>
-            </div>
-        `
+        }" type="checkbox" ${
+          Object.keys(page.include.css || {}).includes(glcss.name)
+            ? "checked"
+            : ""
+        } onchange="addInclude('${escapeQuotes(page.name)}', '${escapeQuotes(
+          glcss.name
+        )}', 'css')" />
+            <label class="form-check-label">${glcss.name}</label>
+          </div>`
       )
       .join("");
 
     const tr = document.createElement("tr");
     tr.innerHTML = `
-            <td>${page.name}</td>
-            <td>${page.title}</td>
-            <td>
-            <div class="input-block w-100">
-                <textarea style="white-space: pre-wrap;" id="code-js-page-${page.id}">${page.js}</textarea>
-                <button class="btn btn-primary input-button" onclick="openEditor('Contenu du fichier javascript de la page : ${page.name}','#code-js-page-${page.id}')">+</button>
-            </div>
-            </td>
-            <td>
-            <div class="input-block w-100">
-                <textarea style="white-space: pre-wrap;" id="code-css-page-${page.id}">${page.css}</textarea>
-                <button class="btn btn-primary input-button" onclick="openEditor('Contenu du fichier css de la page : ${page.name}','#code-css-page-${page.id}')">+</button>
-            </div>
-            </td>
-            <td>${libCheckboxes}</td>
-            <td>${jsCheckboxes}</td>
-            <td>${cssCheckboxes}</td>
-            <td>
-            <button class="btn btn-danger btn-sm" onclick="updatePage(${page.id})">Mettre à jour</button>
-            <button class="btn btn-danger btn-sm" onclick="deletePage(${page.id})">Supprimer</button>
-            </td>
-        `;
+      <td>${page.name}</td>
+      <td>${page.title}</td>
+      <td>
+        <div class="input-block w-100">
+          <textarea style="white-space: pre-wrap;" id="code-js-page-${
+            page.id
+          }">${page.js}</textarea>
+          <button class="btn btn-primary input-button" onclick="openEditor('Contenu du fichier javascript de la page : ${escapeQuotes(
+            page.name
+          )}','#code-js-page-${page.id}')">+</button>
+        </div>
+      </td>
+      <td>
+        <div class="input-block w-100">
+          <textarea style="white-space: pre-wrap;" id="code-css-page-${
+            page.id
+          }">${page.css}</textarea>
+          <button class="btn btn-primary input-button" onclick="openEditor('Contenu du fichier css de la page : ${escapeQuotes(
+            page.name
+          )}','#code-css-page-${page.id}')">+</button>
+        </div>
+      </td>
+      <td>${libs}</td>
+      <td>${jsCheckboxes}</td>
+      <td>${cssCheckboxes}</td>
+      <td>
+        <button class="btn btn-danger btn-sm" onclick="updatePage(${
+          page.id
+        })">Mettre à jour</button>
+        <button class="btn btn-danger btn-sm" onclick="deletePage(${
+          page.id
+        })">Supprimer</button>
+      </td>`;
     tbody.appendChild(tr);
-  });
+  }
 }
 
-function updatePage(id) {
-  let dataCSS = document.querySelector(`#code-css-page-${id}`).value;
-  let dataJS = document.querySelector(`#code-js-page-${id}`).value;
-  const index = sitePages.findIndex((f) => f.id === id);
+function updatePage(idVal) {
+  const dataCSS = document.querySelector(`#code-css-page-${idVal}`).value;
+  const dataJS = document.querySelector(`#code-js-page-${idVal}`).value;
+  const index = sitePages.findIndex((f) => f.id === idVal);
   if (index !== -1) {
     sitePages[index].js = dataJS;
     sitePages[index].css = dataCSS;
     renderPages();
-    alert("les codes locaux js, css et la librairie mises à jour avec succès");
+    showAlert(
+      "les codes locaux js, css et la librairie mises à jour avec succès"
+    );
   }
 }
 
 function addInclude(pageName, inclusion, type) {
   const page = sitePages.find((p) => p.name === pageName);
   if (!page) return;
-
   const checkbox = document.getElementById(
     `page-${pageName}-${type}-${inclusion}`
   );
-  if (checkbox.checked) {
-    page.include[type][inclusion] = true;
-  } else {
-    delete page.include[type][inclusion];
-  }
-
+  if (!checkbox) return;
+  if (checkbox.checked) page.include[type][inclusion] = true;
+  else delete page.include[type][inclusion];
   renderPages();
 }
 
 // ========================== Page Edition ============================= //
-document.querySelector("#searchComponent").oninput = () => {
-  updateComponentSelector(document.querySelector("#searchComponent").value);
+$("#searchComponent").oninput = () => {
+  updateComponentSelector($("#searchComponent").value);
 };
 
 function selectComponent(component) {
@@ -723,48 +694,48 @@ function selectComponent(component) {
 }
 
 function updateComponentSelector(search = "") {
-  elPageEditor.component.innerHTML = ``;
+  elPageEditor.component.innerHTML = "";
+  const lowerSearch = String(search).toLowerCase();
 
-  Object.keys(componentData).forEach((cpn) => {
-    // Préparer le HTML du composant
-    let componentHtml = componentData[cpn]["html-code"];
+  for (const cpn of Object.keys(componentData || {})) {
+    let componentHtml = componentData[cpn]["html-code"] || "";
 
-    // Remplacer les paramètres par leurs valeurs par défaut
+    // remplacer paramètres par leurs valeurs par défaut (non-empty only)
     extractClassTokens(componentHtml).forEach((param) => {
       const paramInfo = componentData[cpn].param[param];
+      if (!paramInfo) return;
       const type = paramInfo[1];
-
       if (type !== "empty") {
         const defaultValue = type === "list" ? paramInfo[3] : paramInfo[2];
-        componentHtml = componentHtml.replaceAll(`{*${param}*}`, defaultValue);
+        componentHtml = componentHtml.split(`{*${param}*}`).join(defaultValue);
       }
     });
 
-    // Créer la carte du composant
     const isSelected = cpn === selectedComponent;
-    if (cpn.toLowerCase().includes(search.toLowerCase())) {
-      elPageEditor.component.innerHTML += `
-                <div class="component-card p-2 bg-primary rounded ${
-                  isSelected
-                    ? "text-primary border border-2 border-primary shadow bg-light"
-                    : "text-light"
-                }" onclick="selectComponent('${cpn}')"  title="${
-        componentData[cpn].desc
-      }">
-                    ${cpn}
-                </div>`;
+    if (cpn.toLowerCase().includes(lowerSearch)) {
+      elPageEditor.component.insertAdjacentHTML(
+        "beforeend",
+        `<div class="component-card p-2 bg-primary rounded ${
+          isSelected
+            ? "text-primary border border-2 border-primary shadow bg-light"
+            : "text-light"
+        }" onclick="selectComponent('${escapeQuotes(
+          cpn
+        )}')" title="${escapeQuotes(
+          componentData[cpn].desc || ""
+        )}">${cpn}</div>`
+      );
     }
-  });
+  }
 }
 
-function findElementById(dataArray, id) {
+function findElementById(dataArray = [], idToFind) {
   for (const el of dataArray) {
-    if (el.id === id) return el;
-
-    for (const key of Object.keys(el.param)) {
+    if (el.id === idToFind) return el;
+    for (const key of Object.keys(el.param || {})) {
       const [label, type, value] = el.param[key];
       if (type === "empty" && Array.isArray(value)) {
-        const found = findElementById(value, id);
+        const found = findElementById(value, idToFind);
         if (found) return found;
       }
     }
@@ -773,8 +744,8 @@ function findElementById(dataArray, id) {
 }
 
 function updatePageForm() {
-  elPageEditor.selectedComponent.textContent = selectedComponent;
-  elPageEditor.selected.textContent = selectedElement;
+  elPageEditor.selectedComponent.textContent = selectedComponent || "";
+  elPageEditor.selected.textContent = selectedElement || "";
 
   elPageEditor.root.classList.toggle("d-none", !selectedComponent);
   elPageEditor.form.classList.toggle("d-none", !selectedElement);
@@ -782,7 +753,7 @@ function updatePageForm() {
   elPageEditor.emptyParamForm.classList.add("d-none");
   elPageEditor.paramForm.classList.add("d-none");
   elPageEditor.copiedForm.classList.add("d-none");
-  elPageEditor.emptyParam.innerHTML = ``;
+  elPageEditor.emptyParam.innerHTML = "";
   elPageEditor.paramForm.innerHTML = `<div class="d-grid"><button class="btn btn-primary" onclick=submitParam() > Mettre à jour </button></div>`;
 
   if (copiedElement[0]) {
@@ -790,82 +761,80 @@ function updatePageForm() {
     elPageEditor.copied.textContent = copiedElement[0];
   }
 
-  if (selectedElement) {
-    const page = sitePages.find((pg) => pg.name === selectedPage);
-    const selectedEl = findElementById(page.data, selectedElement);
-    if (!selectedEl) return;
+  if (!selectedElement) return;
 
-    for (const param of Object.keys(selectedEl.param)) {
-      elPageEditor.paramForm.classList.remove("d-none");
-      if (selectedEl.param[param][1] === "empty") {
-        elPageEditor.emptyParamForm.classList.remove("d-none");
-        elPageEditor.emptyParam.innerHTML += `<option value="${param}" >${param}</option>`;
-      } else if (selectedEl.param[param][1] === "list") {
-        elPageEditor.paramForm.innerHTML =
-          `<div class="mb-3">
-                    <label for="" class="form-label">${param}</label>
-                    <select
-                        type="${selectedEl.param[param][1]}"
-                        class="form-control"
-                        id="param-data-${param}"
-                    >
-                        ${(() => {
-                          let render = ``;
-                          for (const element of selectedEl.param[param][2]) {
-                            render += `<option value="${element}" ${
-                              selectedEl.param[param][3] === element
-                                ? "selected"
-                                : ""
-                            } >${element}</option>`;
-                          }
-                          return render;
-                        })()}
-                    </select>
-                </div>` + elPageEditor.paramForm.innerHTML;
-      } else if (selectedEl.param[param][1] === "textarea") {
-        elPageEditor.paramForm.innerHTML =
-          `<div class="mb-3">
-                    <label for="" class="form-label">${param}</label>
-                    <textarea
-                        type="${selectedEl.param[param][1]}"
-                        class="form-control"
-                        id="param-data-${param}"
-                    >${selectedEl.param[param][2]}</textarea>
-                </div>` + elPageEditor.paramForm.innerHTML;
-      } else {
-        elPageEditor.paramForm.innerHTML =
-          `<div class="mb-3">
-                    <label for="" class="form-label">${param}</label>
-                    <input
-                        type="${selectedEl.param[param][1]}"
-                        class="form-control"
-                        id="param-data-${param}"
-                        value="${selectedEl.param[param][2]}"
-                    />
-                </div>` + elPageEditor.paramForm.innerHTML;
-      }
+  const page = sitePages.find((pg) => pg.name === selectedPage);
+  if (!page) return;
+  const selectedEl = findElementById(page.data, selectedElement);
+  if (!selectedEl) return;
+
+  // Build param form (reverse order maintained so that last push shows first like original)
+  const paramKeys = Object.keys(selectedEl.param || {});
+  for (const param of paramKeys) {
+    elPageEditor.paramForm.classList.remove("d-none");
+    const p = selectedEl.param[param];
+    const [label, type, value] = p;
+    if (type === "empty") {
+      elPageEditor.emptyParamForm.classList.remove("d-none");
+      elPageEditor.emptyParam.insertAdjacentHTML(
+        "beforeend",
+        `<option value="${param}">${param}</option>`
+      );
+    } else if (type === "list") {
+      const options = (selectedEl.param[param][2] || [])
+        .map(
+          (el) =>
+            `<option value="${el}" ${
+              selectedEl.param[param][3] === el ? "selected" : ""
+            }>${el}</option>`
+        )
+        .join("");
+      elPageEditor.paramForm.insertAdjacentHTML(
+        "afterbegin",
+        `<div class="mb-3">
+           <label class="form-label">${param}</label>
+           <select class="form-control" id="param-data-${param}">${options}</select>
+         </div>`
+      );
+    } else if (type === "textarea") {
+      elPageEditor.paramForm.insertAdjacentHTML(
+        "afterbegin",
+        `<div class="mb-3">
+           <label class="form-label">${param}</label>
+           <textarea class="form-control" id="param-data-${param}">${selectedEl.param[param][2]}</textarea>
+         </div>`
+      );
+    } else {
+      elPageEditor.paramForm.insertAdjacentHTML(
+        "afterbegin",
+        `<div class="mb-3">
+           <label class="form-label">${param}</label>
+           <input type="${type}" class="form-control" id="param-data-${param}" value="${escapeQuotes(
+          selectedEl.param[param][2] || ""
+        )}" />
+         </div>`
+      );
     }
-    elPageEditor.anim.value = selectedEl.anim;
-    show("page", page.name);
   }
+
+  elPageEditor.anim.value = selectedEl.anim || "none";
+  show("page", page.name);
 }
 
-function findElementAndParent(dataArray, id, parent = null, paramKey = null) {
+function findElementAndParent(
+  dataArray = [],
+  idToFind,
+  parent = null,
+  paramKey = null
+) {
   for (let i = 0; i < dataArray.length; i++) {
     const el = dataArray[i];
-    if (el.id === id) {
-      return {
-        parentArray: dataArray,
-        index: i,
-        parent,
-        paramKey,
-      };
-    }
-
-    for (const key of Object.keys(el.param)) {
+    if (el.id === idToFind)
+      return { parentArray: dataArray, index: i, parent, paramKey };
+    for (const key of Object.keys(el.param || {})) {
       const [label, type, value] = el.param[key];
       if (type === "empty" && Array.isArray(value)) {
-        const result = findElementAndParent(value, id, el, key);
+        const result = findElementAndParent(value, idToFind, el, key);
         if (result) return result;
       }
     }
@@ -873,19 +842,21 @@ function findElementAndParent(dataArray, id, parent = null, paramKey = null) {
   return null;
 }
 
-elPageEditor.anim.oninput = () => {
-  const page = sitePages.find((pg) => pg.name === selectedPage);
-  const selectedEl = findElementById(page.data, selectedElement);
-  if (!selectedEl) return;
-  selectedEl.anim = elPageEditor.anim.value;
-  updatePageForm();
-};
+if (elPageEditor.anim) {
+  elPageEditor.anim.oninput = () => {
+    const page = sitePages.find((pg) => pg.name === selectedPage);
+    if (!page) return;
+    const selectedEl = findElementById(page.data, selectedElement);
+    if (!selectedEl) return;
+    selectedEl.anim = elPageEditor.anim.value;
+    updatePageForm();
+  };
+}
 
 function copieElement() {
   const page = sitePages.find((pg) => pg.name === selectedPage);
   const selectedEl = findElementById(page.data, selectedElement);
   if (!selectedEl) return;
-
   const deepCopy = JSON.parse(JSON.stringify(selectedEl));
   copiedElement = [selectedElement, deepCopy];
   updatePageForm();
@@ -897,144 +868,97 @@ function cancelCopie() {
   updatePageForm();
 }
 
+function makeComponentInstance(componentName) {
+  const cpn = JSON.parse(JSON.stringify(componentData[componentName]));
+  cpn.id = `component-${componentName}-${record}`;
+  cpn.component = componentName;
+  cpn.anim = "none";
+  return cpn;
+}
+
 function addRootStart(paste = false) {
   const page = sitePages.find((pg) => pg.name === selectedPage);
-  const cpn = JSON.parse(JSON.stringify(componentData[selectedComponent])); // Copie profonde
-  cpn.id = `component-${selectedComponent}-${record}`;
-  cpn.component = selectedComponent;
-  cpn.anim = "none";
-  if (page) {
-    if (!paste) {
-      page.data.unshift(cpn);
-    } else {
-      const pasted = JSON.parse(JSON.stringify(copiedElement[1]));
-      pasted.id = `component-${selectedComponent}-${record}`;
-      page.data.unshift(pasted);
-    }
-    show("page", page.name);
-  }
+  if (!page) return;
+  const instance = paste
+    ? JSON.parse(JSON.stringify(copiedElement[1]))
+    : makeComponentInstance(selectedComponent);
+  instance.id = `component-${selectedComponent}-${record}`;
+  page.data.unshift(instance);
+  show("page", page.name);
   record += 1;
 }
 
 function addRootEnd(paste = false) {
   const page = sitePages.find((pg) => pg.name === selectedPage);
-  const cpn = JSON.parse(JSON.stringify(componentData[selectedComponent])); // Copie profonde
-  cpn.id = `component-${selectedComponent}-${record}`;
-  cpn.component = selectedComponent;
-  cpn.anim = "none";
-  if (page) {
-    if (!paste) {
-      page.data.push(cpn);
-    } else {
-      const pasted = JSON.parse(JSON.stringify(copiedElement[1]));
-      pasted.id = `component-${selectedComponent}-${record}`;
-      page.data.push(pasted);
-    }
-    show("page", page.name);
-  }
-
+  if (!page) return;
+  const instance = paste
+    ? JSON.parse(JSON.stringify(copiedElement[1]))
+    : makeComponentInstance(selectedComponent);
+  instance.id = `component-${selectedComponent}-${record}`;
+  page.data.push(instance);
+  show("page", page.name);
   record += 1;
 }
 
 function addBefore(paste = false) {
   const page = sitePages.find((pg) => pg.name === selectedPage);
+  if (!page) return;
   const found = findElementAndParent(page.data, selectedElement);
   if (!found) return;
-
-  const cpn = JSON.parse(JSON.stringify(componentData[selectedComponent]));
-  cpn.id = `component-${selectedComponent}-${record}`;
-  cpn.component = selectedComponent;
-  cpn.anim = "none";
-
-  if (page) {
-    if (!paste) {
-      found.parentArray.splice(found.index, 0, cpn);
-    } else {
-      const pasted = JSON.parse(JSON.stringify(copiedElement[1]));
-      pasted.id = `component-${selectedComponent}-${record}`;
-      found.parentArray.splice(found.index, 0, pasted);
-    }
-  }
+  const instance = paste
+    ? JSON.parse(JSON.stringify(copiedElement[1]))
+    : makeComponentInstance(selectedComponent);
+  instance.id = `component-${selectedComponent}-${record}`;
+  found.parentArray.splice(found.index, 0, instance);
   record += 1;
-
   updatePageForm();
 }
 
 function addAfter(paste = false) {
   const page = sitePages.find((pg) => pg.name === selectedPage);
+  if (!page) return;
   const found = findElementAndParent(page.data, selectedElement);
   if (!found) return;
-
-  const cpn = JSON.parse(JSON.stringify(componentData[selectedComponent]));
-  cpn.id = `component-${selectedComponent}-${record}`;
-  cpn.component = selectedComponent;
-  cpn.anim = "none";
-
-  if (page) {
-    if (!paste) {
-      found.parentArray.splice(found.index + 1, 0, cpn);
-    } else {
-      const pasted = JSON.parse(JSON.stringify(copiedElement[1]));
-      pasted.id = `component-${selectedComponent}-${record}`;
-      found.parentArray.splice(found.index + 1, 0, pasted);
-    }
-  }
+  const instance = paste
+    ? JSON.parse(JSON.stringify(copiedElement[1]))
+    : makeComponentInstance(selectedComponent);
+  instance.id = `component-${selectedComponent}-${record}`;
+  found.parentArray.splice(found.index + 1, 0, instance);
   record += 1;
-
   updatePageForm();
 }
 
 function addIn(paste = false) {
   const page = sitePages.find((pg) => pg.name === selectedPage);
-  const selectedEl = findElementById(page.data, selectedElement); // récursif
+  if (!page) return;
+  const selectedEl = findElementById(page.data, selectedElement);
   const emptyTarget = elPageEditor.emptyParam.value;
-
   if (
     !selectedEl ||
     !emptyTarget ||
     selectedEl.param[emptyTarget][1] !== "empty"
   )
     return;
-
-  const cpn = JSON.parse(JSON.stringify(componentData[selectedComponent]));
-  cpn.id = `component-${selectedComponent}-${record}`;
-  cpn.component = selectedComponent;
-  cpn.anim = "none";
-
-  // Initialisation si nécessaire
-  if (!Array.isArray(selectedEl.param[emptyTarget][2])) {
+  if (!Array.isArray(selectedEl.param[emptyTarget][2]))
     selectedEl.param[emptyTarget][2] = [];
-  }
-
-  // Insertion à l’index 2 (ou fin si moins de 2 éléments)
   const targetArray = selectedEl.param[emptyTarget][2];
   const insertIndex = Math.min(2, targetArray.length);
-  if (page) {
-    if (!paste) {
-      targetArray.splice(insertIndex, 0, cpn);
-    } else {
-      const pasted = JSON.parse(JSON.stringify(copiedElement[1]));
-      pasted.id = `component-${selectedComponent}-${record}`;
-      targetArray.splice(insertIndex, 0, pasted);
-    }
-  }
-
+  const instance = paste
+    ? JSON.parse(JSON.stringify(copiedElement[1]))
+    : makeComponentInstance(selectedComponent);
+  instance.id = `component-${selectedComponent}-${record}`;
+  targetArray.splice(insertIndex, 0, instance);
   record += 1;
-
   updatePageForm();
 }
 
 function delElement() {
   const page = sitePages.find((pg) => pg.name === selectedPage);
+  if (!page) return;
   const found = findElementAndParent(page.data, selectedElement);
   if (!found) return;
-
-  found.parentArray.splice(found.index, 1); // supprime
-
-  if (selectedElement === copiedElement[0]) {
-    copiedElement = [];
-  }
-
+  found.parentArray.splice(found.index, 1);
+  if (selectedElement === copiedElement[0]) copiedElement = [];
   selectedElement = null;
   updatePageForm();
   show("page", page.name);
@@ -1042,195 +966,116 @@ function delElement() {
 
 function submitParam() {
   const page = sitePages.find((pg) => pg.name === selectedPage);
+  if (!page) return;
   const found = findElementById(page.data, selectedElement);
   if (!found) return;
-
-  for (const param of Object.keys(found.param)) {
-    found.param[param][1] !== "empty"
-      ? found.param[param][1] === "list"
-        ? (found.param[param][3] = document.querySelector(
-            "#param-data-" + param
-          ).value)
-        : (found.param[param][2] = document.querySelector(
-            "#param-data-" + param
-          ).value)
-      : "";
+  for (const param of Object.keys(found.param || {})) {
+    if (found.param[param][1] !== "empty") {
+      if (found.param[param][1] === "list") {
+        found.param[param][3] = document.querySelector(
+          `#param-data-${param}`
+        ).value;
+      } else {
+        found.param[param][2] = document.querySelector(
+          `#param-data-${param}`
+        ).value;
+      }
+    }
   }
   updatePageForm();
   show("page", page.name);
 }
 
-function selectElement(id) {
-  selectedElement = id;
+function selectElement(idVal) {
+  selectedElement = idVal;
   updatePageForm();
 }
 
-function postRenderComponents(page, isRealView = false) {
-  let components_script = {};
-  let components_css = ``;
-  const default_rendered_js = {};
-  const default_rendered_css = {};
-  let allComponentsHTML = "";
-  page.data.forEach((data) => {
-    allComponentsHTML += renderComponent(data, isRealView)[0];
-    if (renderComponent(data, isRealView)[1].default) {
-      if (renderComponent(data, isRealView)[1].custom) {
-        components_css += renderComponent(data, isRealView)[1].custom;
-      }
-      default_rendered_css[renderComponent(data, isRealView)[1].component] =
-        renderComponent(data, isRealView)[1].default;
-    }
-    if (renderComponent(data, isRealView)[2].default) {
-      if (renderComponent(data, isRealView)[2].custom) {
-        if (
-          !components_script[renderComponent(data, isRealView)[2].component]
-        ) {
-          components_script[renderComponent(data, isRealView)[2].component] =
-            [];
-        }
-        components_script[renderComponent(data, isRealView)[2].component].push(
-          renderComponent(data, isRealView)[2].custom
-        );
-      }
-      default_rendered_js[renderComponent(data, isRealView)[2].component] =
-        renderComponent(data, isRealView)[2].default;
-    }
-  });
-
-  //format all components css
-  let allComponentsCSS = "";
-  for (const cpn of Object.keys(default_rendered_css)) {
-    allComponentsCSS += default_rendered_css[cpn];
-  }
-  allComponentsCSS += components_css;
-
-  //format all components script
-  let allComponentsJS = "";
-  for (const cpn of Object.keys(default_rendered_js)) {
-    allComponentsJS += `for (const component of document.querySelectorAll(".component-classname-${cpn}")) {
-      ${components_script[cpn] ? components_script[cpn].join(" else ") : ""}
-      ${
-        components_script[cpn]
-          ? `else { ${default_rendered_js[cpn]} }`
-          : default_rendered_js[cpn]
-      }
-    };`;
-  }
-
-  return {
-    html: allComponentsHTML,
-    css: allComponentsCSS,
-    js: allComponentsJS,
-  };
-}
-
-function renderPagesView() {
-  elPageEditor.view.contentDocument.body.innerHTML = "";
-  const page = sitePages.find((pg) => pg.name === selectedPage);
-  if (!page) return;
-
-  let content = postRenderComponents(page);
-
-  elPageEditor.view.contentDocument.body.innerHTML = content.html;
-  elPageEditor.view.contentDocument.body.innerHTML += content.js
-    ? `<script>${content.js}</script>`
-    : ``;
-
-  updateRealView();
-
-  elPageEditor.view.contentDocument.body.innerHTML +=
-    Object.keys(page.include.js)
-      .flatMap((js_name) =>
-        globalJSFiles
-          .filter((js) => js.name === js_name)
-          .map((js) => `<script>${js.content}</scrip>`)
-      )
-      .join("") + (page.js ? `<script>${page.js}</script>` : ``);
-
-  checklibDependance();
-
-  return content.css === "" ? `` : `<style>${content.css}</style>`;
-}
-
+// ========================== Render / Build ============================= //
+// renderComponent: retourne [html, {component, custom, default}, {component, custom, default}]
 function renderComponent(data, isRealView = false) {
-  let render = data["html-code"];
-  let renderCSS = data["css-code"];
-  let renderJS = data["js-code"];
+  // clone strings to avoid mutation
+  let render = data["html-code"] || "";
+  let renderCSS = data["css-code"] || "";
+  let renderJS = data["js-code"] || "";
 
-  let oldrenderCSS = data["css-code"];
-  let oldrenderJS = data["js-code"];
+  const oldrenderCSS = data["css-code"] || "";
+  const oldrenderJS = data["js-code"] || "";
 
-  const customRender = { css: false, js: false }; //css & js
+  const customRender = { css: false, js: false };
 
+  // replace tokens in HTML
   extractClassTokens(render).forEach((param) => {
-    const [label, type, value] = data.param[param];
+    const p = data.param[param];
+    if (!p) return;
+    const [label, type, value] = p;
     if (type === "empty" && Array.isArray(value)) {
       const nested = value
-        .map((child) => renderComponent(child, isRealView))
+        .map((child) => renderComponent(child, isRealView)[0])
         .join("");
-      render = render.replaceAll(`{*${param}*}`, nested);
+      render = render.split(`{*${param}*}`).join(nested);
     } else if (type === "list") {
-      render = render.replaceAll(`{*${param}*}`, data.param[param][3]);
+      render = render.split(`{*${param}*}`).join(data.param[param][3]);
     } else {
-      render = render.replaceAll(`{*${param}*}`, value);
+      render = render.split(`{*${param}*}`).join(value);
     }
   });
 
+  // CSS token replacement and custom detection
+  let computedOldCSS = oldrenderCSS;
   extractClassTokens(renderCSS).forEach((param) => {
-    const [label, type, value] = data.param[param];
+    const p = data.param[param];
+    if (!p) return;
+    const [label, type] = p;
     if (type === "list") {
-      renderCSS = renderCSS.replaceAll(`{*${param}*}`, data.param[param][3]);
-      oldrenderCSS = oldrenderCSS.replaceAll(
-        `{*${param}*}`,
-        componentData[data.component].param[param][3]
-      );
+      renderCSS = renderCSS.split(`{*${param}*}`).join(data.param[param][3]);
+      computedOldCSS = computedOldCSS
+        .split(`{*${param}*}`)
+        .join(componentData[data.component].param[param][3]);
       if (
         data.param[param][3] !== componentData[data.component].param[param][3]
-      ) {
-        customRender["css"] = true;
-      }
+      )
+        customRender.css = true;
     } else {
-      renderCSS = renderCSS.replaceAll(`{*${param}*}`, value);
-      oldrenderCSS = oldrenderCSS.replaceAll(
-        `{*${param}*}`,
-        componentData[data.component].param[param][2]
-      );
-      if (value !== componentData[data.component].param[param][2]) {
-        customRender["css"] = true;
-      }
+      renderCSS = renderCSS.split(`{*${param}*}`).join(p[2]);
+      computedOldCSS = computedOldCSS
+        .split(`{*${param}*}`)
+        .join(componentData[data.component].param[param][2]);
+      if (p[2] !== componentData[data.component].param[param][2])
+        customRender.css = true;
     }
   });
 
+  // JS token replacement and custom detection
+  let computedOldJS = oldrenderJS;
   extractClassTokens(renderJS).forEach((param) => {
-    const [label, type, value] = data.param[param];
+    const p = data.param[param];
+    if (!p) return;
+    const [label, type] = p;
     if (type === "list") {
-      renderJS = renderJS.replaceAll(`{*${param}*}`, data.param[param][3]);
-      oldrenderJS = oldrenderJS.replaceAll(
-        `{*${param}*}`,
-        componentData[data.component].param[param][3]
-      );
+      renderJS = renderJS.split(`{*${param}*}`).join(data.param[param][3]);
+      computedOldJS = computedOldJS
+        .split(`{*${param}*}`)
+        .join(componentData[data.component].param[param][3]);
       if (
         data.param[param][3] !== componentData[data.component].param[param][3]
-      ) {
-        customRender["js"] = true;
-      }
+      )
+        customRender.js = true;
     } else {
-      renderJS = renderJS.replaceAll(`{*${param}*}`, value);
-      oldrenderJS = oldrenderJS.replaceAll(
-        `{*${param}*}`,
-        componentData[data.component].param[param][2]
-      );
-      if (value !== componentData[data.component].param[param][2]) {
-        customRender["js"] = true;
-      }
+      renderJS = renderJS.split(`{*${param}*}`).join(p[2]);
+      computedOldJS = computedOldJS
+        .split(`{*${param}*}`)
+        .join(componentData[data.component].param[param][2]);
+      if (p[2] !== componentData[data.component].param[param][2])
+        customRender.js = true;
     }
   });
 
-  //format html
+  // Parse HTML and add attributes/classes
   const parser = new DOMParser();
   const doc = parser.parseFromString(render, "text/html");
   const body = doc.body;
-  const firstElement = [...body.childNodes].find((node) => node.nodeType === 1);
+  const firstElement = [...body.childNodes].find((n) => n.nodeType === 1);
 
   if (firstElement) {
     firstElement.classList.add("component-classname-" + data.component);
@@ -1249,43 +1094,113 @@ function renderComponent(data, isRealView = false) {
     }
   }
 
-  //format css
+  // format CSS
   let defaultCSS = null;
-  if (renderCSS !== "") {
-    defaultCSS = `.component-classname-${data.component} {${oldrenderCSS}}`;
-    if (customRender.css) {
-      renderCSS = `#${data.id} {${renderCSS}}`;
-    } else {
-      renderCSS = null;
-    }
-  } else {
-    renderCSS = null;
+  let customCSS = null;
+  if (renderCSS && renderCSS.trim() !== "") {
+    defaultCSS = `.component-classname-${data.component} {${computedOldCSS}}`;
+    customCSS = customRender.css ? `#${data.id} {${renderCSS}}` : null;
   }
 
-  //format js
+  // format JS
   let defaultJS = null;
-  if (renderJS !== "") {
-    defaultJS = `${oldrenderJS}`;
-    if (customRender.js) {
-      renderJS = `if (component.id === "${data.id}") { ${renderJS} }`;
-    } else {
-      renderJS = null;
-    }
-  } else {
-    renderJS = null;
+  let customJS = null;
+  if (renderJS && renderJS.trim() !== "") {
+    defaultJS = `${computedOldJS}`;
+    customJS = customRender.js
+      ? `if (component.id === "${data.id}") { ${renderJS} }`
+      : null;
   }
 
-  //format css
   return [
     body.innerHTML,
-    { component: data.component, custom: renderCSS, default: defaultCSS },
-    { component: data.component, custom: renderJS, default: defaultJS },
+    { component: data.component, custom: customCSS, default: defaultCSS },
+    { component: data.component, custom: customJS, default: defaultJS },
   ];
+}
+
+// postRenderComponents: produce html, css, js aggregated
+function postRenderComponents(page, isRealView = false) {
+  const componentsScript = new Map(); // component -> [custom scripts...]
+  const defaultRenderedJS = new Map();
+  const defaultRenderedCSS = new Map();
+  let allComponentsHTML = "";
+  let components_css_extra = "";
+
+  for (const data of page.data) {
+    // call renderComponent once and reuse result
+    const [html, cssObj, jsObj] = renderComponent(data, isRealView);
+    allComponentsHTML += html;
+
+    if (cssObj && cssObj.default) {
+      if (cssObj.custom) components_css_extra += cssObj.custom;
+      defaultRenderedCSS.set(cssObj.component, cssObj.default);
+    }
+
+    if (jsObj && jsObj.default) {
+      if (jsObj.custom) {
+        if (!componentsScript.has(jsObj.component))
+          componentsScript.set(jsObj.component, []);
+        componentsScript.get(jsObj.component).push(jsObj.custom);
+      }
+      defaultRenderedJS.set(jsObj.component, jsObj.default);
+    }
+  }
+
+  // aggregate default CSS
+  let allComponentsCSS =
+    Array.from(defaultRenderedCSS.values()).join("") + components_css_extra;
+
+  // aggregate JS into a single script string
+  let allComponentsJS = "";
+  for (const [cpn, def] of defaultRenderedJS.entries()) {
+    const customs = componentsScript.get(cpn) || [];
+    // join customs with " else " as original code did, but be careful if empty
+    const customsJoined = customs.length > 0 ? customs.join(" else ") : "";
+    const block = `for (const component of document.querySelectorAll(".component-classname-${cpn}")) {
+      ${customsJoined ? customsJoined : ""}
+      ${customsJoined ? `else { ${def} }` : def}
+    };`;
+    allComponentsJS += block;
+  }
+
+  return {
+    html: allComponentsHTML,
+    css: allComponentsCSS,
+    js: allComponentsJS,
+  };
+}
+
+function renderPagesView() {
+  elPageEditor.view.contentDocument.body.innerHTML = "";
+  const page = sitePages.find((pg) => pg.name === selectedPage);
+  if (!page) return;
+
+  const content = postRenderComponents(page);
+
+  elPageEditor.view.contentDocument.body.innerHTML = content.html;
+  if (content.js)
+    elPageEditor.view.contentDocument.body.innerHTML += `<script>${content.js}</script>`;
+
+  updateRealView();
+
+  // include page-specific global JS (fixed closing tag)
+  elPageEditor.view.contentDocument.body.innerHTML +=
+    Object.keys(page.include.js || {})
+      .flatMap((js_name) =>
+        globalJSFiles
+          .filter((js) => js.name === js_name)
+          .map((js) => `<script>${js.content}</script>`)
+      )
+      .join("") + (page.js ? `<script>${page.js}</script>` : "");
+
+  checklibDependance();
+
+  return content.css === "" ? "" : `<style>${content.css}</style>`;
 }
 
 function updateRealView() {
   const page = sitePages.find((pg) => pg.name === selectedPage);
-
   if (!selectedPage || !page) {
     elPageEditor.viewed.textContent = "Aucune page sélectionnée";
     elPageEditor.realView.contentDocument.head.innerHTML = "";
@@ -1293,93 +1208,61 @@ function updateRealView() {
     return;
   }
 
-  let content = postRenderComponents(page, true);
-
+  const content = postRenderComponents(page, true);
   elPageEditor.viewed.textContent = selectedPage;
 
-  // Génération du HTML des composants (avec animations si définies)
-  const htmlBody = content.html;
-
-  // CSS globaux inclus
-  const cssLinks = Object.keys(page.include.css)
+  // CSS globaux inclus (correct closing tags)
+  const cssLinks = Object.keys(page.include.css || {})
     .map((name) => {
       const file = globalCSSFiles.find((f) => f.name === name);
-      return file ? `<style>\n${file.content}\n</styl>` : "";
+      return file ? `<style>\n${file.content}\n</style>` : "";
     })
     .join("\n");
 
   // JS globaux inclus
-  const jsScripts = Object.keys(page.include.js)
+  const jsScripts = Object.keys(page.include.js || {})
     .map((name) => {
       const file = globalJSFiles.find((f) => f.name === name);
       return file ? `<script>\n${file.content}\n</script>` : "";
     })
     .join("\n");
 
-  // CSS/JS spécifiques à la page
-  const pageCSS = page.css ? `<style>\n${page.css}\n</>` : "";
+  const pageCSS = page.css ? `<style>\n${page.css}\n</style>` : "";
   const pageJS = page.js ? `<script>\n${page.js}\n</script>` : "";
 
-  // Initialisation AOS si au moins un composant l'utilise
   const aosNeeded = page.data.some((comp) => comp.anim && comp.anim !== "none");
   const aosInit = aosNeeded ? `<script>AOS.init();</script>` : "";
 
-  //inclusion de la librairie
-  let libInclusion = ``;
-  libInclusion +=
-    Object.keys(page.include.lib)
-      .flatMap((lib_name) =>
-        Object.keys(libData).map((key) =>
-          key === lib_name
-            ? libData[key].type
-              ? libData[key].link
-              : libData[key].file
-            : ""
-        )
-      )
-      .join("") +
-    page.include["lib-required"]
-      .flatMap((lib_name) =>
-        Object.keys(libData).map((key) =>
-          key === lib_name
-            ? libData[key].type
-              ? libData[key].link
-              : libData[key].file
-            : ""
-        )
-      )
-      .join("");
+  const libInclusion =
+    buildLibInclusionHTML(page.include.lib, libData) +
+    buildLibInclusionHTML(page.include["lib-required"], libData);
 
-  elPageEditor.realView.srcdoc = `
-    <!DOCTYPE html>
-    <html lang="${document.querySelector("#site-lang").value}">
-    <head>
-    ${document.querySelector("#site-meta").value}
-    <link href="/asset/aos.css" rel="stylesheet">
-    <script src="/asset/aos.js"></script>
-    ${libInclusion}
-    ${cssLinks}
-    ${pageCSS}
-    ${content.css !== "" ? `<style>${content.css}</style>` : ""}
-    </head>
-    <body>
-    ${htmlBody}
-    ${jsScripts}
-    ${pageJS}
-    ${content.js !== "" ? `<script>${content.js}</script>` : ""}
-    ${aosInit}
-    </body>
-    </html>`;
+  elPageEditor.realView.srcdoc = `<!DOCTYPE html>
+<html lang="${$("#site-lang").value}">
+<head>
+  ${$("#site-meta").value}
+  <link href="/asset/aos.css" rel="stylesheet">
+  <script src="/asset/aos.js"></script>
+  ${libInclusion}
+  ${cssLinks}
+  ${pageCSS}
+  ${content.css ? `<style>${content.css}</style>` : ""}
+</head>
+<body>
+  ${content.html}
+  ${jsScripts}
+  ${pageJS}
+  ${content.js ? `<script>${content.js}</script>` : ""}
+  ${aosInit}
+</body>
+</html>`;
 
   elPageEditor.realView.classList.add("d-none");
   elPageEditor.viewed.textContent = "Chargement...";
 
   setTimeout(() => {
-    //desactive les liens dans la vue réelle
     elPageEditor.realView.contentDocument.body.onclick = (e) => {
-      if (e.target.tagName === "A" || e.target.closest("a")) {
-        e.preventDefault(); // Bloque la navigation
-      }
+      if (e.target.tagName === "A" || e.target.closest("a")) e.preventDefault();
     };
     elPageEditor.realView.classList.remove("d-none");
     elPageEditor.viewed.textContent = "";
@@ -1387,13 +1270,10 @@ function updateRealView() {
 }
 
 function buildPage(page, root = "../asset/") {
-  let content = postRenderComponents(page, true);
-
-  // Génération du HTML des composants (avec animations si définies)
+  const content = postRenderComponents(page, true);
   const htmlBody = content.html;
 
-  // CSS globaux inclus
-  const cssLinks = Object.keys(page.include.css)
+  const cssLinks = Object.keys(page.include.css || {})
     .map((name) => {
       const file = globalCSSFiles.find((f) => f.name === name);
       return file
@@ -1402,28 +1282,25 @@ function buildPage(page, root = "../asset/") {
     })
     .join("\n");
 
-  // JS globaux inclus
-  const jsScripts = Object.keys(page.include.js)
+  const jsScripts = Object.keys(page.include.js || {})
     .map((name) => {
       const file = globalJSFiles.find((f) => f.name === name);
       return file
-        ? `<script src="${root}asset_site/${file.name}.js" ></script>`
+        ? `<script src="${root}asset_site/${file.name}.js"></script>`
         : "";
     })
     .join("\n");
 
-  // CSS/JS spécifiques à la page
   const pageCSS = page.css ? `<style>\n${page.css}\n</style>` : "";
   const pageJS = page.js ? `<script>\n${page.js}\n</script>` : "";
 
-  // Initialisation AOS si au moins un composant l'utilise
   const aosNeeded = page.data.some((comp) => comp.anim && comp.anim !== "none");
   const aosInit = aosNeeded ? `<script>AOS.init();</script>` : "";
 
-  //inclusion de la librairie
-  let libInclusion = ``;
+  // lib inclusion: differenciate css/js assets (close tags fixed)
+  let libInclusion = "";
   libInclusion +=
-    Object.keys(page.include.lib)
+    Object.keys(page.include.lib || {})
       .flatMap((lib_name) =>
         Object.keys(libData).map((key) =>
           key === lib_name
@@ -1450,42 +1327,37 @@ function buildPage(page, root = "../asset/") {
       )
       .join("");
 
-  // Assemblage complet du document
-  const fullHTML = `
-<!DOCTYPE html>
-<html lang="${document.querySelector("#site-lang").value}">
+  const fullHTML = `<!DOCTYPE html>
+<html lang="${$("#site-lang").value}">
 <head>
-    ${document.querySelector("#site-meta").value}
-    <title>${page.title}</title>
-    <link href="${root}asset_sys/aos.css" rel="stylesheet">
-    <script src="${root}asset_sys/aos.js"></script>
-    ${libInclusion}
-    ${cssLinks}
-    ${pageCSS}
-    ${content.css !== "" ? `<style>${content.css}</style>` : ""}
+  ${$("#site-meta").value}
+  <title>${page.title}</title>
+  <link href="${root}asset_sys/aos.css" rel="stylesheet">
+  <script src="${root}asset_sys/aos.js"></script>
+  ${libInclusion}
+  ${cssLinks}
+  ${pageCSS}
+  ${content.css ? `<style>${content.css}</style>` : ""}
 </head>
 <body>
-    ${htmlBody}
-    ${jsScripts}
-    ${pageJS}
-    ${content.js !== "" ? `<script>${content.js}</script>` : ""}
-    ${aosInit}
+  ${htmlBody}
+  ${jsScripts}
+  ${pageJS}
+  ${content.js ? `<script>${content.js}</script>` : ""}
+  ${aosInit}
 </body>
-</html>
-    `.trim();
+</html>`.trim();
 
   return fullHTML;
 }
 
 async function build() {
-  let data = (await loadData("site")) || {};
-  let site_name = document.querySelector("#site-name").value;
-  let asset_file = ["aos.css", "aos.js"];
+  const data = (await loadData("site")) || {};
+  const site_name = $("#site-name").value;
+  const asset_file = ["aos.css", "aos.js"];
 
-  if (!Object.keys(data).includes(site_name)) {
-    alert("Sauvegarder d'abord le site");
-    return;
-  }
+  if (!Object.keys(data).includes(site_name))
+    return showAlert("Sauvegarder d'abord le site");
 
   const zip = new JSZip();
   const fpage = zip.folder("page");
@@ -1493,19 +1365,22 @@ async function build() {
   const asset_sys = asset.folder("asset_sys");
   const ressource = zip.folder("ressource");
 
-  // Charger et formater les fichiers système
-  for (const file of asset_file) {
-    try {
-      const response = await fetch("../asset/" + file);
-      let text = await response.text();
-      asset_sys.file(file, text);
-    } catch (e) {
-      console.error("Erreur lors du chargement des données JSON :", e);
-    }
-  }
+  // Charger fichiers système en parallèle
+  await Promise.all(
+    asset_file.map(async (file) => {
+      try {
+        const response = await fetch("../asset/" + file);
+        const text = await response.text();
+        asset_sys.file(file, text);
+      } catch (e) {
+        console.error("Erreur lors du chargement des fichiers système :", e);
+      }
+    })
+  );
 
-  // Ajouter la librairie (exclue du formatage car déjà propre)
+  // Ajouter librairies (non-type = fichier)
   for (const file of library) {
+    if (!libData[file]) continue;
     if (!libData[file].type) {
       if (libData[file].file.includes("<script>")) {
         asset_sys.file(
@@ -1521,46 +1396,35 @@ async function build() {
     }
   }
 
-  // Ajouter et formater les styles globaux
+  // Styles et scripts globaux
   const asset_site = asset.folder("asset_site");
-  for (const css of globalCSSFiles) {
+  for (const css of globalCSSFiles)
     asset_site.file(css.name + ".css", autoBeautify(css.content));
-  }
-
-  // Ajouter et formater les scripts globaux
-  for (const js of globalJSFiles) {
+  for (const js of globalJSFiles)
     asset_site.file(js.name + ".js", autoBeautify(js.content));
-  }
 
-  // Construire les pages et les analyser pour récupérer les ressources
+  // Construire pages
   const pageContents = sitePages.map((page) => {
-    if (page.name === "index") {
+    if (page.name === "index")
       return { name: "index.html", content: buildPage(page, "asset/") };
-    } else {
-      return { name: page.name + ".html", content: buildPage(page) };
-    }
+    return { name: page.name + ".html", content: buildPage(page) };
   });
 
-  // Ajouter les pages dans le zip
   for (const page of pageContents) {
-    if (page.name === "index.html") {
+    if (page.name === "index.html")
       zip.file("index.html", html_beautify(page.content, { indent_size: 2 }));
-    } else {
-      fpage.file(page.name, html_beautify(page.content, { indent_size: 2 }));
-    }
+    else fpage.file(page.name, html_beautify(page.content, { indent_size: 2 }));
   }
 
-  //Ajouter les ressource
-  let files = listFiles("/ressource");
-  setTimeout(() => {
-    //Attendre que les ressources chargent
-    for (const file of Object.entries(files)) {
-      ressource.file(file[0], file[1]);
-    }
-    // Générer le zip et sauvegarder
-    zip.generateAsync({ type: "blob" }).then(function (content) {
-      saveAs(content, site_name + "-build.zip");
-    });
-    alert("site construit avec succès");
-  }, 2000);
+  // Ajouter ressources trouvées
+  const files = await listFiles("/ressource");
+  for (const [fileName, fileContent] of Object.entries(files)) {
+    ressource.file(fileName, fileContent);
+  }
+
+  // Générer zip et sauvegarder
+  zip.generateAsync({ type: "blob" }).then((content) => {
+    saveAs(content, site_name + "-build.zip");
+    showAlert("site construit avec succès");
+  });
 }

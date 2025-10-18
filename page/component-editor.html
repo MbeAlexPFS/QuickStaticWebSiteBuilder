@@ -156,6 +156,10 @@
             >Retour à la page d'accueil</a
           >
           <h4>Création d'un composant</h4>
+          <div class="bg-info rounded-2 p-3 m-3 fw-bold text-white">
+            Les noms de paramettres doivent contenir uniquement des lettre sans
+            symboles spéciaux (exemple: sans "-" ou ".", ...)
+          </div>
           <div class="mb-3">
             <label class="form-label"
               >Entrez le code HTML du composant et mettez les parties
@@ -184,7 +188,8 @@
             <label class="form-label"
               >Entrez le code JS du composant et mettez les parties
               personnalisables entre {* *}. La variable "component" represente
-              le composant dans le script</label
+              le composant dans le script. Assurez vous de bien fermer les
+              instructions avec ";".</label
             >
             <textarea
               class="form-control"

@@ -22,7 +22,10 @@
 - Ajouter du code css dans une page en fonction des composants qui y sont utilisés (depend de la classe du composant (.component-component_name)) -> X
 - Ajouter du code js dans une page en fonction des composants qui y sont utilisés (depend de la classe du composant (component-component_name), on pourrait ajouter le script via un foreach de chaque de element qui a une classe du composant) -> X
 
-##
+## Stabilité de l'outil -> X 18/10/2025
+
+- Optimiser les alertes qui apparaissent trop fréquenment -> X
+- refactoriser tout le code pour une meilleur lisibilité -> X
 
 ## Avancé
 
@@ -31,3 +34,4 @@
 - Créer un mini framework js QSWSB pour mieux gerer les composants
 - Faire la documentation complète
 - Ajouter une IA interne pour generer les composants et créer des pages via un prompt
+- ajouter des tests unitaires

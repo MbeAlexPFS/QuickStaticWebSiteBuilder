@@ -143,9 +143,6 @@ async function duplicate(site) {
     }
   }
 
-  alert(
-    "Veuillez coller les nouvelles données du bloc-note dans site-list.json pour continuer"
-  );
   sessionStorage.setItem("editsite", newSite);
   location.replace("page/site-editor.html");
 }
