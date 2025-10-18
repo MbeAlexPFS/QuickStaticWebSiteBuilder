@@ -29,7 +29,7 @@
 
 ## Avancé
 
-- Faire une documentation pour l'app de base
+- Faire une documentation pour l'app de base -> X
 - Créer des templates de site (todo, gallery, ecommerce, blog)
 - Créer un mini framework js QSWSB pour mieux gerer les composants
 - Faire la documentation complète

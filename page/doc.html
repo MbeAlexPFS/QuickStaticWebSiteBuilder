@@ -13,26 +13,38 @@
     <div class="container-sm p-5">
       <div class="row d-flex">
         <div class="col-2 m-3 border border-2 border-black rounded p-3">
-          <ul>
-            <li><a href="/">Retour</a></li>
-            <li><a href="#about">Quick Static WebSite Builder ?</a></li>
-            <li><a href="#step">Les étapes de création</a></li>
-            <li><a href="#stack">Sous le capot</a></li>
-            <li><a href="#video">Vidéo de test</a></li>
-            <li><a href="#last">Note</a></li>
+          <ul class="fw-bold">
+            <li><a class="text-decoration-none" href="/">Retour</a></li>
+            <li>
+              <a class="text-decoration-none" href="#about"
+                >Quick Static WebSite Builder ?</a
+              >
+            </li>
+            <li>
+              <a class="text-decoration-none" href="#step"
+                >Les étapes de création</a
+              >
+            </li>
+            <li>
+              <a class="text-decoration-none" href="#stack">Sous le capot</a>
+            </li>
+            <li>
+              <a class="text-decoration-none" href="#video">Vidéo de test</a>
+            </li>
+            <li><a class="text-decoration-none" href="#last">Note</a></li>
           </ul>
         </div>
         <div
-          class="col border border-2 border-black rounded p-3 overflow-auto"
+          class="col border border-2 border-black rounded p-3 overflow-auto fw-medium"
           style="height: 90vh"
         >
           <h1 id="about" class="text-center p-3">
-            <u>Quick Static Website Builder ?</u>
+            <i>Quick Static Website Builder ?</i>
           </h1>
           <p>
             <span class="text-primary">Quick Static WebSite Builder</span> ou
             <span class="text-primary">QSWSB</span> est un outil permettant la
-            création simple et automatique d'un site web.Cet outil est utilisé
+            création simple et automatique d'un site web. Cet outil est utilisé
             principalement pour la création de site web statique (sans base de
             données) comme des blogs, des portfolios, des catalogues ou des
             sites de documentation. Ses principales fonctionnalités sont:
@@ -46,15 +58,18 @@
             <li>La génération automatique du site web statique</li>
             <li>
               La possibioslté de partager les composants et les sites
-              (templates) via leur données JSON
+              (templates) via du JSON
             </li>
           </ul>
           <p>
             <span class="text-primary">QSWSB</span> est un projet open source,
-            vous pouvez le retrouver sur <a href="">ce lien</a>.
+            vous pouvez le retrouver sur
+            <a href="https://github.com/MbeAlexPFS/QuickStaticWebSiteBuilder"
+              >ce lien</a
+            >.
           </p>
           <h1 id="step" class="text-center p-3">
-            <u>Les étapes de création</u>
+            <i>Les étapes de création</i>
           </h1>
           <h2>0 - Configuration de l'application</h2>
           <p>
@@ -64,36 +79,33 @@
           <h2>1 - Créer des composants</h2>
           <p>
             Vous pouvez soit créer à partir de zéro soit vous basez sur le code
-            html d'un composant vu sur le web (il ne faut pas oublier de garder
-            ses codes css et js pour l'inclure dans la création du site). Vous
-            pouvez aussi importer un ensemble de composants sous forme de json
-            (cela remplacera les composants existants) créés par un utilisateur
-            qui aura sauvegardé ses composants ou créés par une IA en se basant
-            sur la structure d'un composant dans le fichier
-            "component-template.json" à la racine de l'application.
+            html d'un composant vu sur le net. Vous pouvez aussi importer un
+            ensemble de composants sous forme de json créés par un utilisateur
+            qui a sauvegardé ses composants auparavant ou créés par une IA en se
+            basant sur la structure d'un composant dans le fichier
+            "components-template.txt" à la racine de l'application.
           </p>
           <h2>2 - Créer un site</h2>
           <p>
             Vous pouvez créer un site à partir de zéro ou en dupliquant un
             modèle de site (template) pour créer un nouveau site. Vous pouvez
-            aussi importer un site sous forme de json (cela remplacera les sites
-            existants). Vous pouvez mettre toutes les ressources (image, données
-            json, font, ...) nécessaires dans dossier "ressource" à la racine de
-            l'application, elles seront automatiquement incluses dans le site à
-            condition de les appeler en précedent le nom du fichier par
-            "/ressource/".
+            aussi importer un site sous forme de json. Vous pouvez mettre toutes
+            les ressources nécessaires (image, données json, font, ...) dans
+            dossier "ressource" à la racine de l'application, elles seront
+            automatiquement incluses dans le site à condition de les appeler en
+            précedent le chemin du fichier par "/ressource/".
           </p>
           <h2>3 - Builder le site</h2>
           <p>
             Après avoir finir la création de votre site, sauvegardez et buildez
-            et c'est fait ! votre site statique est prêt à être héberger, il
-            n'y'a plus rien à toucher dans le build.
+            et c'est fait ! votre site statique est prêt à l'emploie, il n'y'a
+            plus rien à toucher dans le build.
           </p>
           <h1 id="stack" class="text-center p-3">
             <u>Sous le capot</u>
           </h1>
           <p>
-            Cette application est executée totalement au coté client. Aucune
+            Cette application est executée totalement coté client. Aucune
             dépendances externes. Comme base de données, elle utilise indexedDB
             (dexieDB) et le sessionStorage pour stocker les données des
             composants et des sites. Elle utilise bootstrap pour l'interface et
@@ -115,11 +127,11 @@
             on pourrait le faire sur VSCODE avec la conception visuelle de site
             web. Tout sites statiques que vous pouvez faire avec un éditeur de
             code classique vous pouvez le faire avec QSWSB avec en plus la
-            possibilité de créer vos pages visuellement avec les composants que
-            vous avez créés. Je me suis inspiré un peu de React surtout pour
-            l'aspect composant =). Je ne suis pas un expert en développement
-            web, je suis encore en apprentissage, J'acceuillerai tout avis et
-            critique sur cette application.
+            possibilité de créer vos pages visuellement avec les composants de
+            votre choix. Je me suis inspiré un peu de React surtout pour
+            l'aspect composant. Je ne suis pas un expert en développement web,
+            je suis encore en formation, J'acceuillerai tout avis et critiques
+            sur cette application =).
           </p>
         </div>
       </div>

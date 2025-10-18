@@ -157,7 +157,6 @@ async function deleteSite(site) {
 // Chargement asynchrone des données librairies
 async function renderLibList(search = "") {
   libdt = (await loadData("lib")) || {};
-  console.log(libdt);
   let liblist = document.querySelector("#lib-list");
   liblist.innerHTML = "";
   if (Object.keys(libdt).length > 0) {
@@ -219,12 +218,91 @@ document.getElementById("loadcpn").addEventListener("change", function (event) {
     reader.onload = function (e) {
       try {
         const jsonContent = JSON.parse(e.target.result);
-        inputdt = jsonContent;
-        let newdt = { ...dt, ...inputdt };
+        const inputdt = jsonContent;
+
+        // Copie sécurisée de la data actuelle
+        const newdt = { ...dt };
+
+        // Parcours des nouveaux composants à fusionner
+        for (const [key, value] of Object.entries(inputdt)) {
+          if (key in dt) {
+            // Composant déjà existant → demander confirmation
+            const replace = confirm(
+              `Le composant "${key}" existe déjà.\nVoulez-vous le remplacer par le nouveau ?`
+            );
+            if (replace) {
+              newdt[key] = value;
+              console.log(
+                `✅ Composant "${key}" remplacé par la nouvelle version.`
+              );
+            } else {
+              console.log(`⏩ Composant "${key}" conservé (ancien gardé).`);
+            }
+          } else {
+            // Nouveau composant → ajout direct
+            newdt[key] = value;
+            console.log(`🆕 Nouveau composant "${key}" ajouté.`);
+          }
+        }
+
+        // Mise à jour finale
         dt = newdt;
         addOrUpdateData("component", dt);
+
         alert("Composants chargés avec succès !");
         renderComponentList();
+        // You can now work with the JSON content
+      } catch (error) {
+        console.error("Error parsing JSON:", error);
+      }
+    };
+    reader.readAsText(file);
+  } else {
+    console.error("No file selected");
+  }
+});
+
+document.getElementById("loadlib").addEventListener("change", function (event) {
+  //basé sur un code javascript importé pour charger une base
+  const file = event.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      try {
+        const jsonContent = JSON.parse(e.target.result);
+        const inputdt = jsonContent;
+
+        // Copie sécurisée de la data actuelle
+        const newdt = { ...libdt };
+
+        // Parcours des nouveaux composants à fusionner
+        for (const [key, value] of Object.entries(inputdt)) {
+          if (key in libdt) {
+            // Composant déjà existant → demander confirmation
+            const replace = confirm(
+              `La librairie "${key}" existe déjà.\nVoulez-vous le remplacer par le nouveau ?`
+            );
+            if (replace) {
+              newdt[key] = value;
+              console.log(
+                `✅ Librairie "${key}" remplacé par la nouvelle version.`
+              );
+            } else {
+              console.log(`⏩ Librairie "${key}" conservé (ancien gardé).`);
+            }
+          } else {
+            // Nouveau composant → ajout direct
+            newdt[key] = value;
+            console.log(`🆕 Nouveau librairie "${key}" ajouté.`);
+          }
+        }
+
+        // Mise à jour finale
+        libdt = newdt;
+        addOrUpdateData("component", libdt);
+
+        alert("Composants chargés avec succès !");
+        renderLibList();
         // You can now work with the JSON content
       } catch (error) {
         console.error("Error parsing JSON:", error);
@@ -246,10 +324,37 @@ document
       reader.onload = function (e) {
         try {
           const jsonContent = JSON.parse(e.target.result);
-          inputdt = jsonContent;
-          let newdt = { ...stdt, ...inputdt };
+          const inputdt = jsonContent;
+
+          // Copie sécurisée de la data actuelle
+          const newdt = { ...stdt };
+
+          // Parcours des nouveaux composants à fusionner
+          for (const [key, value] of Object.entries(inputdt)) {
+            if (key in stdt) {
+              // Composant déjà existant → demander confirmation
+              const replace = confirm(
+                `Le site "${key}" existe déjà.\nVoulez-vous le remplacer par le nouveau ?`
+              );
+              if (replace) {
+                newdt[key] = value;
+                console.log(
+                  `✅ Site "${key}" remplacé par la nouvelle version.`
+                );
+              } else {
+                console.log(`⏩ Site "${key}" conservé (ancien gardé).`);
+              }
+            } else {
+              // Nouveau composant → ajout direct
+              newdt[key] = value;
+              console.log(`🆕 Nouveau site "${key}" ajouté.`);
+            }
+          }
+
+          // Mise à jour finale
           stdt = newdt;
-          addOrUpdateData("site", dt);
+          addOrUpdateData("site", stdt);
+
           alert("Site chargés avec succès !");
           renderSiteList();
           // You can now work with the JSON content
@@ -284,6 +389,10 @@ async function saveComponentPack() {
 
 async function saveSitePack() {
   downloadObjectAsJson(stdt, "sitePack");
+}
+
+async function saveLibPack() {
+  downloadObjectAsJson(libdt, "libPack");
 }
 
 // Initialisation des listes au chargement de la page

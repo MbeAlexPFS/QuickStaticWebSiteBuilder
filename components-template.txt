@@ -1,7 +1,10 @@
 "Conteneur": { //nom du composant
 	"desc": "C'est un conteneur personnalisable",
 	"html-code": "<{*balise*} id=\"{*id*}\" class=\"bg-{*bg*}\" >{*content*}</{*balise*}>", //paramettre entre {*...*}
-	"param": {
+	"js-code": "", //paramettre entre {*...*}
+	"css-code": "", //paramettre entre {*...*}
+	"lib": [], //librairies utilisées. exemple: [jquery,bootstrap]
+	"param": { //inclus aussi ceux dans js-code et css-code
 		"balise": 
 		[
 			"balise", //repetition de la clé
