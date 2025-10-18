@@ -17,10 +17,10 @@
 
 ## Creation site
 
-- Enlever le formulaire de creation de librairie et le remplacer par une selection de librairie
+- Enlever le formulaire de creation de librairie et le remplacer par une selection de librairie -> X
+- Ajouter les libraires dans le head d'une page en fonction des composants qui y sont installé (mais si la libraire n'est pas un cdn alors on importe les fichiers de toutes les librairies utilisé dans le site dans le build final (asset_app) )
 - Ajouter du code css dans une page en fonction des composants qui y sont utilisés (depend de la classe du composant (.component-component_name))
 - Ajouter du code js dans une page en fonction des composants qui y sont utilisés (depend de la classe du composant (component-component_name), on pourrait ajouter le script via un foreach de chaque de element qui a une classe du composant)
-- Ajouter les libraires dans le head d'une page en fonction des composants qui y sont installé (mais la libraire n'est pas un cdn alors on importe les fichiers de toutes les librairies utilisé dans le site dans le build final (asset_app) )
 
 ## Avancé
 

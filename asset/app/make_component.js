@@ -75,6 +75,7 @@ async function submitCode() {
   const html = el.cdeComponentInput?.value || "";
   const css = el.cdeCSSComponentInput?.value || "";
   const js = el.cdeJSComponentInput?.value || "";
+
   if (!html.trim()) return alert("Vous devez entrer un code pour continuer.");
 
   //verifier si il y'a des paramettres doubles
@@ -127,7 +128,11 @@ async function initComponentParamForm(editing = false) {
       <div class="mb-3">
           <label class="form-label">Type de paramètre</label>
           <select class="form-select form-select-lg" id="param-type-${name}" oninput="toggleComponentParamTypeForm('${name}')">
-              <option value="empty">Vide</option>
+              ${
+                extractClassTokens(cdeComponent).includes(name)
+                  ? `<option value="empty">Vide</option>`
+                  : ``
+              }
               <option value="text">Texte</option>
               <option value="number">Nombre</option>
               <option value="list">Liste</option>
@@ -446,7 +451,6 @@ function libAction(action, lib) {
 // =======================
 // Rendu / Prévisualisation
 // =======================
-
 // Remplace tous les tokens par les valeurs actuelles (une seule passe par type)
 function renderComponent(data) {
   let renderHTML = data["html-code"] ?? "";
@@ -483,13 +487,7 @@ function renderComponent(data) {
     firstElement.classList.add("component-element");
   }
 
-  const doccss = parser.parseFromString(renderCSS, "text/html");
-  const bodycss = doccss.body;
-
-  const docjs = parser.parseFromString(renderJS, "text/html");
-  const bodyjs = docjs.body;
-
-  return [body.innerHTML, bodycss.innerHTML, bodyjs.innerHTML];
+  return [body.innerHTML, renderCSS, renderJS];
 }
 
 async function updateRealView(data /* objet composant */) {
@@ -503,11 +501,9 @@ async function updateRealView(data /* objet composant */) {
 
   const jsScripts =
     jsBody.trim() !== ""
-      ? `<script> document.querySelectorAll(".component-element").forEach((component) => {
-            if (component.id === "component-preview") {
-              ${jsBody}
-            }
-          });</script>`
+      ? `<script> document.querySelectorAll('.component-element').forEach((component) => { if (component.id === 'component-preview') {
+        ${jsBody}
+        }});</script>`
       : "";
 
   // inclusion libs
@@ -533,6 +529,7 @@ async function updateRealView(data /* objet composant */) {
     </html>`;
 
   if (!el.realView) return;
+
   el.realView.srcdoc = srcdoc;
   // masquer pendant l'ajout d'évts pour éviter flicker
   el.realView.classList.add("d-none");
