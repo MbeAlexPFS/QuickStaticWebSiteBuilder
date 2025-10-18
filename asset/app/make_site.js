@@ -1065,36 +1065,35 @@ function selectElement(id) {
   updatePageForm();
 }
 
-function renderPagesView() {
-  elPageEditor.view.contentDocument.body.innerHTML = "";
-  const page = sitePages.find((pg) => pg.name === selectedPage);
+function postRenderComponents(page, isRealView = false) {
   let components_script = {};
   let components_css = ``;
   const default_rendered_js = {};
   const default_rendered_css = {};
-  if (!page) return;
-
+  let allComponentsHTML = "";
   page.data.forEach((data) => {
-    elPageEditor.view.contentDocument.body.innerHTML +=
-      renderComponent(data)[0];
-    if (renderComponent(data)[1].default) {
-      if (renderComponent(data)[1].custom) {
-        components_css += renderComponent(data)[1].custom;
+    allComponentsHTML += renderComponent(data, isRealView)[0];
+    if (renderComponent(data, isRealView)[1].default) {
+      if (renderComponent(data, isRealView)[1].custom) {
+        components_css += renderComponent(data, isRealView)[1].custom;
       }
-      default_rendered_css[renderComponent(data)[1].component] =
-        renderComponent(data)[1].default;
+      default_rendered_css[renderComponent(data, isRealView)[1].component] =
+        renderComponent(data, isRealView)[1].default;
     }
-    if (renderComponent(data)[2].default) {
-      if (renderComponent(data)[2].custom) {
-        if (!components_script[renderComponent(data)[2].component]) {
-          components_script[renderComponent(data)[2].component] = [];
+    if (renderComponent(data, isRealView)[2].default) {
+      if (renderComponent(data, isRealView)[2].custom) {
+        if (
+          !components_script[renderComponent(data, isRealView)[2].component]
+        ) {
+          components_script[renderComponent(data, isRealView)[2].component] =
+            [];
         }
-        components_script[renderComponent(data)[2].component].push(
-          renderComponent(data)[2].custom
+        components_script[renderComponent(data, isRealView)[2].component].push(
+          renderComponent(data, isRealView)[2].custom
         );
       }
-      default_rendered_js[renderComponent(data)[2].component] =
-        renderComponent(data)[2].default;
+      default_rendered_js[renderComponent(data, isRealView)[2].component] =
+        renderComponent(data, isRealView)[2].default;
     }
   });
 
@@ -1109,14 +1108,35 @@ function renderPagesView() {
   let allComponentsJS = "";
   for (const cpn of Object.keys(default_rendered_js)) {
     allComponentsJS += `for (const component of document.querySelectorAll(".component-classname-${cpn}")) {
-      ${components_script[cpn] ? components_script[cpn].join(" ") : ""}
-      ${default_rendered_js[cpn]}
+      ${components_script[cpn] ? components_script[cpn].join(" else ") : ""}
+      ${
+        components_script[cpn]
+          ? `else { ${default_rendered_js[cpn]} }`
+          : default_rendered_js[cpn]
+      }
     };`;
   }
-  elPageEditor.view.contentDocument.body.innerHTML +=
-    allComponentsJS === "" ? `` : `<script>${allComponentsJS}</script>`;
 
-  //updateRealView();
+  return {
+    html: allComponentsHTML,
+    css: allComponentsCSS,
+    js: allComponentsJS,
+  };
+}
+
+function renderPagesView() {
+  elPageEditor.view.contentDocument.body.innerHTML = "";
+  const page = sitePages.find((pg) => pg.name === selectedPage);
+  if (!page) return;
+
+  let content = postRenderComponents(page);
+
+  elPageEditor.view.contentDocument.body.innerHTML = content.html;
+  elPageEditor.view.contentDocument.body.innerHTML += content.js
+    ? `<script>${content.js}</script>`
+    : ``;
+
+  updateRealView();
 
   elPageEditor.view.contentDocument.body.innerHTML +=
     Object.keys(page.include.js)
@@ -1129,7 +1149,7 @@ function renderPagesView() {
 
   checklibDependance();
 
-  return allComponentsCSS === "" ? `` : `<style>${allComponentsCSS}</style>`;
+  return content.css === "" ? `` : `<style>${content.css}</style>`;
 }
 
 function renderComponent(data, isRealView = false) {
@@ -1214,10 +1234,10 @@ function renderComponent(data, isRealView = false) {
 
   if (firstElement) {
     firstElement.classList.add("component-classname-" + data.component);
+    firstElement.setAttribute("id", data.id);
 
     if (isRealView && data.anim && data.anim !== "none") {
       firstElement.setAttribute("data-aos", data.anim);
-      firstElement.setAttribute("id", data.id);
     }
 
     if (!isRealView) {
@@ -1225,7 +1245,6 @@ function renderComponent(data, isRealView = false) {
       const baseClass = "component-element" + (isSelected ? "-selected" : "");
       firstElement.classList.add(...baseClass.split(" "));
       firstElement.setAttribute("data-id", data.id);
-      firstElement.setAttribute("id", data.id);
       firstElement.setAttribute("title", `ID: ${data.id}`);
     }
   }
@@ -1248,7 +1267,7 @@ function renderComponent(data, isRealView = false) {
   if (renderJS !== "") {
     defaultJS = `${oldrenderJS}`;
     if (customRender.js) {
-      renderJS = `if (component.id === "${data.id}") { ${renderJS} break;}`;
+      renderJS = `if (component.id === "${data.id}") { ${renderJS} }`;
     } else {
       renderJS = null;
     }
@@ -1274,12 +1293,12 @@ function updateRealView() {
     return;
   }
 
+  let content = postRenderComponents(page, true);
+
   elPageEditor.viewed.textContent = selectedPage;
 
   // Génération du HTML des composants (avec animations si définies)
-  const htmlBody = page.data
-    .map((data) => renderComponent(data, true)[0])
-    .join("\n");
+  const htmlBody = content.html;
 
   // CSS globaux inclus
   const cssLinks = Object.keys(page.include.css)
@@ -1307,13 +1326,29 @@ function updateRealView() {
 
   //inclusion de la librairie
   let libInclusion = ``;
-  library.map(
-    (lib) =>
-      (libInclusion +=
-        lib.type === "script"
-          ? `<script>${lib.content}</script>`
-          : `<style>${lib.content}</>`)
-  );
+  libInclusion +=
+    Object.keys(page.include.lib)
+      .flatMap((lib_name) =>
+        Object.keys(libData).map((key) =>
+          key === lib_name
+            ? libData[key].type
+              ? libData[key].link
+              : libData[key].file
+            : ""
+        )
+      )
+      .join("") +
+    page.include["lib-required"]
+      .flatMap((lib_name) =>
+        Object.keys(libData).map((key) =>
+          key === lib_name
+            ? libData[key].type
+              ? libData[key].link
+              : libData[key].file
+            : ""
+        )
+      )
+      .join("");
 
   elPageEditor.realView.srcdoc = `
     <!DOCTYPE html>
@@ -1325,11 +1360,13 @@ function updateRealView() {
     ${libInclusion}
     ${cssLinks}
     ${pageCSS}
+    ${content.css !== "" ? `<style>${content.css}</style>` : ""}
     </head>
     <body>
     ${htmlBody}
     ${jsScripts}
     ${pageJS}
+    ${content.js !== "" ? `<script>${content.js}</script>` : ""}
     ${aosInit}
     </body>
     </html>`;
@@ -1339,24 +1376,21 @@ function updateRealView() {
 
   setTimeout(() => {
     //desactive les liens dans la vue réelle
-    elPageEditor.realView.contentDocument.body.addEventListener(
-      "click",
-      (e) => {
-        if (e.target.tagName === "A" || e.target.closest("a")) {
-          e.preventDefault(); // Bloque la navigation
-        }
+    elPageEditor.realView.contentDocument.body.onclick = (e) => {
+      if (e.target.tagName === "A" || e.target.closest("a")) {
+        e.preventDefault(); // Bloque la navigation
       }
-    );
+    };
     elPageEditor.realView.classList.remove("d-none");
     elPageEditor.viewed.textContent = "";
   }, 2000);
 }
 
 function buildPage(page, root = "../asset/") {
+  let content = postRenderComponents(page, true);
+
   // Génération du HTML des composants (avec animations si définies)
-  const htmlBody = page.data
-    .map((data) => renderComponent(data, true))
-    .join("\n");
+  const htmlBody = content.html;
 
   // CSS globaux inclus
   const cssLinks = Object.keys(page.include.css)
@@ -1388,13 +1422,33 @@ function buildPage(page, root = "../asset/") {
 
   //inclusion de la librairie
   let libInclusion = ``;
-  library.map(
-    (lib) =>
-      (libInclusion +=
-        lib.type === "script"
-          ? `<script src="${root}asset_sys/${lib.name}"></script>`
-          : `<link href="${root}asset_sys/${lib.name}" rel="stylesheet">`)
-  );
+  libInclusion +=
+    Object.keys(page.include.lib)
+      .flatMap((lib_name) =>
+        Object.keys(libData).map((key) =>
+          key === lib_name
+            ? libData[key].type
+              ? libData[key].link
+              : libData[key].file.includes("<script>")
+              ? `<script src="${root}asset_sys/${key}.js"></script>`
+              : `<link href="${root}asset_sys/${key}.css" rel="stylesheet">`
+            : ""
+        )
+      )
+      .join("") +
+    page.include["lib-required"]
+      .flatMap((lib_name) =>
+        Object.keys(libData).map((key) =>
+          key === lib_name
+            ? libData[key].type
+              ? libData[key].link
+              : libData[key].file.includes("<script>")
+              ? `<script src="${root}asset_sys/${key}.js"></script>`
+              : `<link href="${root}asset_sys/${key}.css" rel="stylesheet">`
+            : ""
+        )
+      )
+      .join("");
 
   // Assemblage complet du document
   const fullHTML = `
@@ -1408,11 +1462,13 @@ function buildPage(page, root = "../asset/") {
     ${libInclusion}
     ${cssLinks}
     ${pageCSS}
+    ${content.css !== "" ? `<style>${content.css}</style>` : ""}
 </head>
 <body>
     ${htmlBody}
     ${jsScripts}
     ${pageJS}
+    ${content.js !== "" ? `<script>${content.js}</script>` : ""}
     ${aosInit}
 </body>
 </html>
@@ -1450,7 +1506,19 @@ async function build() {
 
   // Ajouter la librairie (exclue du formatage car déjà propre)
   for (const file of library) {
-    asset_sys.file(file.name, file.content);
+    if (!libData[file].type) {
+      if (libData[file].file.includes("<script>")) {
+        asset_sys.file(
+          file + ".js",
+          libData[file].file.replace("<script>", "").replace("</script>", "")
+        );
+        continue;
+      }
+      asset_sys.file(
+        file + ".css",
+        libData[file].file.replace("<style>", "").replace("</style>", "")
+      );
+    }
   }
 
   // Ajouter et formater les styles globaux
