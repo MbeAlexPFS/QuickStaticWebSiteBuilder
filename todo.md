@@ -13,7 +13,6 @@
 - permettre l'ajout du code js du composant avec ses parties personnalisables (precisez d'utilser la variable "element" pour interargir avec le composant) -> X
 - permettre l'ajout du code css du composant avec ses parties personnalisables -> X
 - permettre l'ajout de librairies dont le composant dépends et permettre aussi leur suppression -> X
-- <u>Note</u>: le nom des paramettres doivent êtres uniques dans un composant -> X
 
 ## Creation site -> X 18/10/2025
 
@@ -22,10 +21,17 @@
 - Ajouter du code css dans une page en fonction des composants qui y sont utilisés (depend de la classe du composant (.component-component_name)) -> X
 - Ajouter du code js dans une page en fonction des composants qui y sont utilisés (depend de la classe du composant (component-component_name), on pourrait ajouter le script via un foreach de chaque de element qui a une classe du composant) -> X
 
-## Stabilité de l'outil -> X 18/10/2025
+## Stabilité de l'outil -> X 20/10/2025
 
 - Optimiser les alertes qui apparaissent trop fréquenment -> X
 - refactoriser tout le code pour une meilleur lisibilité -> X
+- Remplacer les id de l'edition par une class -> X
+- Afficher les librairies utilisé mais manquant dans la base -> X
+- Refaire le placement des id en fonction de l'ordre de rendu, pas de création (corrige les id des enfants d'une copie) -> X
+
+## Accessibilité
+
+- Permettre de definir la racine du rendu à partir d'un element "empty" d'un composant (permettre d'editer plus facillement les éléments dans un popup caché en édition)
 
 ## Avancé
 

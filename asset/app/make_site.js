@@ -68,7 +68,6 @@ let selectedElement = "";
 let copiedElement = [];
 let selectedComponent = "";
 let editorInputID = "";
-let record = 0;
 
 // Cached DOM nodes
 const element = {
@@ -118,7 +117,6 @@ async function initSiteEditor() {
       globalCSSFiles = Array.isArray(data.css) ? [...data.css] : [];
       globalJSFiles = Array.isArray(data.js) ? [...data.js] : [];
       sitePages = Array.isArray(data.content) ? [...data.content] : [];
-      record = data.record || 0;
 
       updatePageForm();
       renderGlobalCodeCSS();
@@ -174,17 +172,19 @@ function show(page, pageSelection = null) {
        <meta name="viewport" content="width=device-width, initial-scale=1.0">
        <link rel="stylesheet" href="/asset/aos.css">
        <script src="/asset/aos.js"></script>
-       <style>
-         .component-element { border: 2px dashed dodgerblue; padding: 5px; }
-         .component-element:hover { background-color: var(--bs-light); cursor: pointer; }
-         .component-element-selected { border: 2px solid purple; box-shadow: 0 0 10px rgb(30, 0, 255); padding: 4px; border-radius: 4px; }
-         .component-element-debug-name { color: dodgerblue; }
-       </style>` +
+       ` +
       libsHtml +
       requiredLibsHtml +
       cssInline +
       (pageObj.css ? `<style>${pageObj.css}</style>` : "") +
-      headerData;
+      headerData +
+      `
+      <style>
+         .component-element { border: 2px dashed dodgerblue; padding: 5px; }
+         .component-element:hover { box-shadow: 0 0 10px rgba(255, 0, 0, 1); cursor: pointer; }
+         .component-element-selected { border: 2px solid purple; box-shadow: 0 0 10px rgb(30, 0, 255); padding: 4px; border-radius: 4px; }
+         .component-element-debug-name { color: dodgerblue; }
+       </style>`;
 
     // click handling: select nearest .component-element
     elPageEditor.view.contentDocument.body.onclick = (e) => {
@@ -251,7 +251,6 @@ async function saveSite() {
     js: globalJSFiles,
     css: globalCSSFiles,
     content: sitePages,
-    record,
   };
 
   if (!site.name) return showAlert("veuillez assigner un nom au site");
@@ -576,7 +575,9 @@ function renderPages() {
         } onchange="addInclude('${escapeQuotes(page.name)}', '${escapeQuotes(
           lib
         )}', 'lib')" />
-            <label class="form-check-label">${lib}</label>
+            <label class="form-check-label">${lib} ${
+          !Object.keys(libData).includes(lib) ? "(absente dans la base)" : ""
+        }</label>
           </div>`
       )
       .join("");
@@ -860,7 +861,6 @@ function copieElement() {
   const deepCopy = JSON.parse(JSON.stringify(selectedEl));
   copiedElement = [selectedElement, deepCopy];
   updatePageForm();
-  record += 1;
 }
 
 function cancelCopie() {
@@ -870,7 +870,7 @@ function cancelCopie() {
 
 function makeComponentInstance(componentName) {
   const cpn = JSON.parse(JSON.stringify(componentData[componentName]));
-  cpn.id = `component-${componentName}-${record}`;
+  cpn.id = ``;
   cpn.component = componentName;
   cpn.anim = "none";
   return cpn;
@@ -882,10 +882,8 @@ function addRootStart(paste = false) {
   const instance = paste
     ? JSON.parse(JSON.stringify(copiedElement[1]))
     : makeComponentInstance(selectedComponent);
-  instance.id = `component-${selectedComponent}-${record}`;
   page.data.unshift(instance);
   show("page", page.name);
-  record += 1;
 }
 
 function addRootEnd(paste = false) {
@@ -894,10 +892,8 @@ function addRootEnd(paste = false) {
   const instance = paste
     ? JSON.parse(JSON.stringify(copiedElement[1]))
     : makeComponentInstance(selectedComponent);
-  instance.id = `component-${selectedComponent}-${record}`;
   page.data.push(instance);
   show("page", page.name);
-  record += 1;
 }
 
 function addBefore(paste = false) {
@@ -908,9 +904,7 @@ function addBefore(paste = false) {
   const instance = paste
     ? JSON.parse(JSON.stringify(copiedElement[1]))
     : makeComponentInstance(selectedComponent);
-  instance.id = `component-${selectedComponent}-${record}`;
   found.parentArray.splice(found.index, 0, instance);
-  record += 1;
   updatePageForm();
 }
 
@@ -922,9 +916,7 @@ function addAfter(paste = false) {
   const instance = paste
     ? JSON.parse(JSON.stringify(copiedElement[1]))
     : makeComponentInstance(selectedComponent);
-  instance.id = `component-${selectedComponent}-${record}`;
   found.parentArray.splice(found.index + 1, 0, instance);
-  record += 1;
   updatePageForm();
 }
 
@@ -946,9 +938,7 @@ function addIn(paste = false) {
   const instance = paste
     ? JSON.parse(JSON.stringify(copiedElement[1]))
     : makeComponentInstance(selectedComponent);
-  instance.id = `component-${selectedComponent}-${record}`;
   targetArray.splice(insertIndex, 0, instance);
-  record += 1;
   updatePageForm();
 }
 
@@ -993,17 +983,16 @@ function selectElement(idVal) {
 
 // ========================== Render / Build ============================= //
 // renderComponent: retourne [html, {component, custom, default}, {component, custom, default}]
+
+let renderCSSPerComponentCache = {};
+let renderJSPerComponentCache = {};
+let record = 0;
+
 function renderComponent(data, isRealView = false) {
   // clone strings to avoid mutation
   let render = data["html-code"] || "";
-  let renderCSS = data["css-code"] || "";
-  let renderJS = data["js-code"] || "";
-
-  const oldrenderCSS = data["css-code"] || "";
-  const oldrenderJS = data["js-code"] || "";
-
-  const customRender = { css: false, js: false };
-
+  data.id = `component-${data.component}-${record}`;
+  record += 1;
   // replace tokens in HTML
   extractClassTokens(render).forEach((param) => {
     const p = data.param[param];
@@ -1011,8 +1000,9 @@ function renderComponent(data, isRealView = false) {
     const [label, type, value] = p;
     if (type === "empty" && Array.isArray(value)) {
       const nested = value
-        .map((child) => renderComponent(child, isRealView)[0])
+        .map((child) => renderComponent(child, isRealView))
         .join("");
+
       render = render.split(`{*${param}*}`).join(nested);
     } else if (type === "list") {
       render = render.split(`{*${param}*}`).join(data.param[param][3]);
@@ -1021,55 +1011,72 @@ function renderComponent(data, isRealView = false) {
     }
   });
 
-  // CSS token replacement and custom detection
-  let computedOldCSS = oldrenderCSS;
-  extractClassTokens(renderCSS).forEach((param) => {
-    const p = data.param[param];
-    if (!p) return;
-    const [label, type] = p;
-    if (type === "list") {
-      renderCSS = renderCSS.split(`{*${param}*}`).join(data.param[param][3]);
-      computedOldCSS = computedOldCSS
-        .split(`{*${param}*}`)
-        .join(componentData[data.component].param[param][3]);
-      if (
-        data.param[param][3] !== componentData[data.component].param[param][3]
-      )
-        customRender.css = true;
-    } else {
-      renderCSS = renderCSS.split(`{*${param}*}`).join(p[2]);
-      computedOldCSS = computedOldCSS
-        .split(`{*${param}*}`)
-        .join(componentData[data.component].param[param][2]);
-      if (p[2] !== componentData[data.component].param[param][2])
-        customRender.css = true;
+  //recupere tous les composants et leur customs (css et js)
+  if (data["css-code"].trim() !== "") {
+    if (!renderCSSPerComponentCache[data.component]) {
+      renderCSSPerComponentCache[data.component] = [];
     }
-  });
+    // CSS token replacement and custom detection
+    let customCSS = false;
+    let renderCSS = data["css-code"];
+    extractClassTokens(renderCSS).forEach((param) => {
+      const p = data.param[param];
+      if (!p) return;
+      const [label, type] = p;
+      if (type === "list") {
+        if (
+          data.param[param][3] !== componentData[data.component].param[param][3]
+        ) {
+          renderCSS = renderCSS
+            .split(`{*${param}*}`)
+            .join(data.param[param][3]);
+          customCSS = true;
+        }
+      } else {
+        if (p[2] !== componentData[data.component].param[param][2]) {
+          renderCSS = renderCSS.split(`{*${param}*}`).join(p[2]);
+          customCSS = true;
+        }
+      }
+    });
+    if (customCSS) {
+      renderCSSPerComponentCache[data.component].push(
+        scopeComponentCSS(`.${data.id}`, renderCSS, data["html-code"])
+      );
+    }
+  }
 
-  // JS token replacement and custom detection
-  let computedOldJS = oldrenderJS;
-  extractClassTokens(renderJS).forEach((param) => {
-    const p = data.param[param];
-    if (!p) return;
-    const [label, type] = p;
-    if (type === "list") {
-      renderJS = renderJS.split(`{*${param}*}`).join(data.param[param][3]);
-      computedOldJS = computedOldJS
-        .split(`{*${param}*}`)
-        .join(componentData[data.component].param[param][3]);
-      if (
-        data.param[param][3] !== componentData[data.component].param[param][3]
-      )
-        customRender.js = true;
-    } else {
-      renderJS = renderJS.split(`{*${param}*}`).join(p[2]);
-      computedOldJS = computedOldJS
-        .split(`{*${param}*}`)
-        .join(componentData[data.component].param[param][2]);
-      if (p[2] !== componentData[data.component].param[param][2])
-        customRender.js = true;
+  if (data["js-code"].trim() !== "") {
+    if (!renderJSPerComponentCache[data.component]) {
+      renderJSPerComponentCache[data.component] = [];
     }
-  });
+    // JS token replacement and custom detection
+    let customJS = false;
+    let renderJS = data["js-code"];
+    extractClassTokens(renderJS).forEach((param) => {
+      const p = data.param[param];
+      if (!p) return;
+      const [label, type] = p;
+      if (type === "list") {
+        if (
+          data.param[param][3] !== componentData[data.component].param[param][3]
+        ) {
+          renderJS = renderJS.split(`{*${param}*}`).join(data.param[param][3]);
+          customJS = true;
+        }
+      } else {
+        if (p[2] !== componentData[data.component].param[param][2]) {
+          renderJS = renderJS.split(`{*${param}*}`).join(p[2]);
+          customJS = true;
+        }
+      }
+    });
+    if (customJS) {
+      renderJSPerComponentCache[data.component].push(
+        ` if (component.classList.contains("${data.id}")) { ${renderJS} }`
+      );
+    }
+  }
 
   // Parse HTML and add attributes/classes
   const parser = new DOMParser();
@@ -1079,7 +1086,7 @@ function renderComponent(data, isRealView = false) {
 
   if (firstElement) {
     firstElement.classList.add("component-classname-" + data.component);
-    firstElement.setAttribute("id", data.id);
+    firstElement.classList.add(data.id);
 
     if (isRealView && data.anim && data.anim !== "none") {
       firstElement.setAttribute("data-aos", data.anim);
@@ -1094,79 +1101,73 @@ function renderComponent(data, isRealView = false) {
     }
   }
 
-  // format CSS
-  let defaultCSS = null;
-  let customCSS = null;
-  if (renderCSS && renderCSS.trim() !== "") {
-    defaultCSS = scopeComponentCSS(
-      `.component-classname-${data.component}`,
-      computedOldCSS,
-      data["html-code"]
-    );
-    customCSS = customRender.css
-      ? scopeComponentCSS(`#${data.id}`, renderCSS, data["html-code"])
-      : null;
-  }
-
-  // format JS
-  let defaultJS = null;
-  let customJS = null;
-  if (renderJS && renderJS.trim() !== "") {
-    defaultJS = `${computedOldJS}`;
-    customJS = customRender.js
-      ? `if (component.id === "${data.id}") { ${renderJS} }`
-      : null;
-  }
-
-  return [
-    body.innerHTML,
-    { component: data.component, custom: customCSS, default: defaultCSS },
-    { component: data.component, custom: customJS, default: defaultJS },
-  ];
+  return body.innerHTML;
 }
 
 // postRenderComponents: produce html, css, js aggregated
 function postRenderComponents(page, isRealView = false) {
-  const componentsScript = new Map(); // component -> [custom scripts...]
-  const defaultRenderedJS = new Map();
-  const defaultRenderedCSS = new Map();
   let allComponentsHTML = "";
-  let components_css_extra = "";
+  renderCSSPerComponentCache = {};
+  renderJSPerComponentCache = {};
+  record = 0;
 
   for (const data of page.data) {
     // call renderComponent once and reuse result
-    const [html, cssObj, jsObj] = renderComponent(data, isRealView);
-    allComponentsHTML += html;
-
-    if (cssObj && cssObj.default) {
-      if (cssObj.custom) components_css_extra += cssObj.custom;
-      defaultRenderedCSS.set(cssObj.component, cssObj.default);
-    }
-
-    if (jsObj && jsObj.default) {
-      if (jsObj.custom) {
-        if (!componentsScript.has(jsObj.component))
-          componentsScript.set(jsObj.component, []);
-        componentsScript.get(jsObj.component).push(jsObj.custom);
-      }
-      defaultRenderedJS.set(jsObj.component, jsObj.default);
-    }
+    allComponentsHTML += renderComponent(data, isRealView);
   }
 
   // aggregate default CSS
-  let allComponentsCSS =
-    Array.from(defaultRenderedCSS.values()).join("") + components_css_extra;
+  let allComponentsCSS = "";
+  for (let key of Object.keys(renderCSSPerComponentCache)) {
+    let defaultCSS = componentData[key]["css-code"];
+    extractClassTokens(defaultCSS).forEach((param) => {
+      const p = componentData[key].param[param];
+      if (!p) return;
+      const [label, type] = p;
+      if (type === "list") {
+        defaultCSS = defaultCSS
+          .split(`{*${param}*}`)
+          .join(componentData[key].param[param][3]);
+      } else {
+        defaultCSS = defaultCSS.split(`{*${param}*}`).join(p[2]);
+      }
+    });
+
+    allComponentsCSS +=
+      scopeComponentCSS(
+        `.component-classname-${key}`,
+        defaultCSS,
+        componentData[key]["html-code"]
+      ) + renderCSSPerComponentCache[key].join("");
+  }
 
   // aggregate JS into a single script string
   let allComponentsJS = "";
-  for (const [cpn, def] of defaultRenderedJS.entries()) {
-    const customs = componentsScript.get(cpn) || [];
-    // join customs with " else " as original code did, but be careful if empty
-    const customsJoined = customs.length > 0 ? customs.join(" else ") : "";
-    const block = `for (const component of document.querySelectorAll(".component-classname-${cpn}")) {
+  for (let key of Object.keys(renderJSPerComponentCache)) {
+    let defaultJS = componentData[key]["js-code"];
+    extractClassTokens(defaultJS).forEach((param) => {
+      const p = componentData[key].param[param];
+      if (!p) return;
+      const [label, type] = p;
+      if (type === "list") {
+        defaultJS = defaultJS
+          .split(`{*${param}*}`)
+          .join(componentData[key].param[param][3]);
+      } else {
+        defaultJS = defaultJS.split(`{*${param}*}`).join(p[2]);
+      }
+    });
+
+    const customsJoined =
+      renderJSPerComponentCache[key].length > 0
+        ? renderJSPerComponentCache[key].join(" else ")
+        : "";
+
+    const block = `for (const component of document.querySelectorAll(".component-classname-${key}")) {
       ${customsJoined ? customsJoined : ""}
-      ${customsJoined ? `else { ${def} }` : def}
+      ${customsJoined ? `else { ${defaultJS} }` : defaultJS}
     };`;
+
     allComponentsJS += block;
   }
 
@@ -1267,9 +1268,12 @@ function updateRealView() {
   elPageEditor.viewed.textContent = "Chargement...";
 
   setTimeout(() => {
-    elPageEditor.realView.contentDocument.body.onclick = (e) => {
-      if (e.target.tagName === "A" || e.target.closest("a")) e.preventDefault();
-    };
+    if (elPageEditor.realView.contentDocument.body) {
+      elPageEditor.realView.contentDocument.body.onclick = (e) => {
+        if (e.target.tagName === "A" || e.target.closest("a"))
+          e.preventDefault();
+      };
+    }
     elPageEditor.realView.classList.remove("d-none");
     elPageEditor.viewed.textContent = "";
   }, 2000);

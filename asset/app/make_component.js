@@ -85,10 +85,6 @@ async function submitCode() {
     ...extractClassTokens(js),
   ];
 
-  if (params.length > new Set(params).size) {
-    return alert("Les paramètres doivent être uniques.");
-  }
-
   for (let key of Object.keys(paramsComponent)) {
     if (key in params) {
       continue;
@@ -411,12 +407,17 @@ function updateLib() {
   libList.innerHTML = "";
   libIncludeList.innerHTML = "";
 
-  Object.keys(libData).forEach((libName) => {
+  new Set([...Object.keys(libData), ...libComponent]).forEach((libName) => {
     if (libName.includes(el.searchLib?.value || "")) {
       libList.insertAdjacentHTML(
         "beforeend",
         `<tr>
-          <td scope="row">${libName}</td>
+          <td scope="row">${libName} ${
+          libComponent.includes(libName) &&
+          !Object.keys(libData).includes(libName)
+            ? `<span class="text-danger">(Librairie absente)</span>`
+            : ""
+        }</td>
           <td>
             <div class="form-check form-switch">
               <input
@@ -433,7 +434,14 @@ function updateLib() {
       );
     }
     if (libComponent.includes(libName)) {
-      libIncludeList.insertAdjacentHTML("beforeend", `<li>${libName}</li>`);
+      if (Object.keys(libData).includes(libName)) {
+        libIncludeList.insertAdjacentHTML("beforeend", `<li>${libName}</li>`);
+      } else {
+        libIncludeList.insertAdjacentHTML(
+          "beforeend",
+          `<li class="text-secondary">${libName} (absente dans la base) </li>`
+        );
+      }
     }
   });
 
@@ -507,7 +515,7 @@ async function updateRealView(data /* objet composant */) {
   const cssLinks =
     cssBody.trim() !== ""
       ? `<style> ${scopeComponentCSS(
-          "#component-preview",
+          ".component-element",
           cssBody,
           data["html-code"]
         )} </style>`
@@ -515,9 +523,9 @@ async function updateRealView(data /* objet composant */) {
 
   const jsScripts =
     jsBody.trim() !== ""
-      ? `<script> document.querySelectorAll('.component-element').forEach((component) => { if (component.id === 'component-preview') {
+      ? `<script> document.querySelectorAll('.component-element').forEach((component) => { 
         ${jsBody}
-        }});</script>`
+        });</script>`
       : "";
 
   // inclusion libs

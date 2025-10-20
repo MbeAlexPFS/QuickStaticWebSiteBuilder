@@ -34,6 +34,7 @@ function scopeComponentCSS(id, cssRules, htmlTemplate) {
   }
 
   // Préfixer ou remplacer
+  let no_selector = false;
   css = css.replace(
     /([^{]+)\{([^}]*)\}/gs,
     (match, selectorList, declarations) => {
@@ -64,6 +65,10 @@ function scopeComponentCSS(id, cssRules, htmlTemplate) {
       return `${mapped.join(", ")} {${updatedDecl}}`;
     }
   );
+
+  if (css === cssRules) {
+    return prettifyCss(`${id} { ${cssRules} }`);
+  }
 
   // Réinsérer at-rules
   atRules.forEach((r, idx) => {
