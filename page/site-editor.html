@@ -326,6 +326,7 @@
                         <div class="d-grid gap-2 mb-3">
                           <button class="btn btn-primary" onclick="addRootStart()"> Ajouter le composant au début de la page </button>
                           <button class="btn btn-primary" onclick="addRootEnd()"> Ajouter le composant à la fin de la page </button>
+                          <button class="btn btn-primary" id="to-init-root"> Revenir à la racine principale </button>
                         </div>
                       </div>
                     </div>
@@ -344,6 +345,7 @@
                           <label class="form-label">Emplacement</label>
                           <select class="form-select form-select-lg" id="element-empty-param"></select>
                           <button class="btn btn-primary mt-2" onclick="addIn()"> Ajouter le composant dedans </button>
+                          <button class="btn btn-primary mt-2" onclick="setRoot()"> Definir comme la nouvelle racine </button>
                         </div>
                         <div class="d-grid gap-2 mb-3">
                           <button class="btn btn-primary" onclick="copieElement()"> Copier l'élément </button>

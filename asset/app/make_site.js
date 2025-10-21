@@ -68,6 +68,7 @@ let selectedElement = "";
 let copiedElement = [];
 let selectedComponent = "";
 let editorInputID = "";
+let componentRootID = [];
 
 // Cached DOM nodes
 const element = {
@@ -81,6 +82,7 @@ const elPageEditor = {
   root: $("#root-form"),
   selected: $("#selected-element"),
   selectedComponent: $("#selected-component"),
+  toInitRoot: $("#to-init-root"),
   emptyParam: $("#element-empty-param"),
   emptyParamForm: $("#form-empty-param"),
   paramForm: $("#element-param-form"),
@@ -145,6 +147,11 @@ function show(page, pageSelection = null) {
 
   if (pageSelection !== null) {
     selectedPage = pageSelection;
+
+    if (selectedPage !== componentRootID[2]) {
+      componentRootID = [];
+    }
+
     renderPageSelector();
     const headerData = renderPagesView();
 
@@ -276,8 +283,10 @@ function renderPageSelector() {
       (pg) =>
         `<button type="button" class="btn btn-${
           pg.name === selectedPage ? "warning" : "danger"
-        }" onclick="show('page','${escapeQuotes(pg.name)}')">${
-          pg.name
+        }" onclick="show('page','${escapeQuotes(pg.name)}')">${pg.name}${
+          componentRootID.length > 0
+            ? " > " + componentRootID[0] + "." + componentRootID[1]
+            : ""
         }</button>`
     )
     .join("");
@@ -757,6 +766,10 @@ function updatePageForm() {
   elPageEditor.emptyParam.innerHTML = "";
   elPageEditor.paramForm.innerHTML = `<div class="d-grid"><button class="btn btn-primary" onclick=submitParam() > Mettre à jour </button></div>`;
 
+  componentRootID.length === 0
+    ? elPageEditor.toInitRoot.classList.add("d-none")
+    : elPageEditor.toInitRoot.classList.remove("d-none");
+
   if (copiedElement[0]) {
     elPageEditor.copiedForm.classList.remove("d-none");
     elPageEditor.copied.textContent = copiedElement[0];
@@ -822,6 +835,35 @@ function updatePageForm() {
   show("page", page.name);
 }
 
+function setRoot() {
+  const page = sitePages.find((pg) => pg.name === selectedPage);
+  const root = findElementById(page.data, selectedElement)["param"][
+    elPageEditor.emptyParam.value
+  ][2];
+  if (!Array.isArray(root)) {
+    findElementById(page.data, selectedElement)["param"][
+      elPageEditor.emptyParam.value
+    ][2] = [];
+  }
+
+  componentRootID = [
+    selectedElement,
+    elPageEditor.emptyParam.value,
+    selectedPage,
+  ];
+  selectedElement = "";
+  renderPageSelector();
+  updatePageForm();
+  show("page", page.name);
+}
+
+elPageEditor.toInitRoot.onclick = () => {
+  const page = sitePages.find((pg) => pg.name === selectedPage);
+  componentRootID = [];
+  updatePageForm();
+  show("page", page.name);
+};
+
 function findElementAndParent(
   dataArray = [],
   idToFind,
@@ -882,7 +924,16 @@ function addRootStart(paste = false) {
   const instance = paste
     ? JSON.parse(JSON.stringify(copiedElement[1]))
     : makeComponentInstance(selectedComponent);
-  page.data.unshift(instance);
+  if (componentRootID.length === 0) {
+    page.data.unshift(instance);
+  } else {
+    const root = findElementById(page.data, componentRootID[0])["param"][
+      componentRootID[1]
+    ][2];
+    root.unshift(instance);
+  }
+
+  updatePageForm();
   show("page", page.name);
 }
 
@@ -892,7 +943,15 @@ function addRootEnd(paste = false) {
   const instance = paste
     ? JSON.parse(JSON.stringify(copiedElement[1]))
     : makeComponentInstance(selectedComponent);
-  page.data.push(instance);
+  if (componentRootID.length === 0) {
+    page.data.push(instance);
+  } else {
+    const root = findElementById(page.data, componentRootID[0])["param"][
+      componentRootID[1]
+    ][2];
+    root.push(instance);
+  }
+  updatePageForm();
   show("page", page.name);
 }
 
@@ -973,7 +1032,6 @@ function submitParam() {
     }
   }
   updatePageForm();
-  show("page", page.name);
 }
 
 function selectElement(idVal) {
@@ -992,7 +1050,7 @@ function renderComponent(data, isRealView = false) {
   // clone strings to avoid mutation
   let render = data["html-code"] || "";
   data.id = `component-${data.component}-${record}`;
-  record += 1;
+
   // replace tokens in HTML
   extractClassTokens(render).forEach((param) => {
     const p = data.param[param];
@@ -1003,7 +1061,21 @@ function renderComponent(data, isRealView = false) {
         .map((child) => renderComponent(child, isRealView))
         .join("");
 
-      render = render.split(`{*${param}*}`).join(nested);
+      if (isRealView) {
+        render = render.split(`{*${param}*}`).join(nested);
+      } else {
+        if (componentRootID.length === 0) {
+          render = render.split(`{*${param}*}`).join(nested);
+        } else {
+          const page = sitePages.find((pg) => pg.name === selectedPage);
+          const root = findElementById(page.data, componentRootID[0])["param"][
+            componentRootID[1]
+          ][2];
+          if (findElementById(root, data.id)) {
+            render = render.split(`{*${param}*}`).join(nested);
+          }
+        }
+      }
     } else if (type === "list") {
       render = render.split(`{*${param}*}`).join(data.param[param][3]);
     } else {
@@ -1101,17 +1173,19 @@ function renderComponent(data, isRealView = false) {
     }
   }
 
+  record += 1;
+
   return body.innerHTML;
 }
 
 // postRenderComponents: produce html, css, js aggregated
-function postRenderComponents(page, isRealView = false) {
+function postRenderComponents(pageData, isRealView = false) {
   let allComponentsHTML = "";
   renderCSSPerComponentCache = {};
   renderJSPerComponentCache = {};
   record = 0;
 
-  for (const data of page.data) {
+  for (const data of pageData) {
     // call renderComponent once and reuse result
     allComponentsHTML += renderComponent(data, isRealView);
   }
@@ -1183,7 +1257,14 @@ function renderPagesView() {
   const page = sitePages.find((pg) => pg.name === selectedPage);
   if (!page) return;
 
-  const content = postRenderComponents(page);
+  const content =
+    componentRootID.length === 0
+      ? postRenderComponents(page.data)
+      : postRenderComponents(
+          findElementById(page.data, componentRootID[0])["param"][
+            componentRootID[1]
+          ][2]
+        );
 
   elPageEditor.view.contentDocument.body.innerHTML = content.html;
   if (content.js)
@@ -1215,7 +1296,7 @@ function updateRealView() {
     return;
   }
 
-  const content = postRenderComponents(page, true);
+  const content = postRenderComponents(page.data, true);
   elPageEditor.viewed.textContent = selectedPage;
 
   // CSS globaux inclus (correct closing tags)
@@ -1275,12 +1356,12 @@ function updateRealView() {
       };
     }
     elPageEditor.realView.classList.remove("d-none");
-    elPageEditor.viewed.textContent = "";
+    elPageEditor.viewed.textContent = selectedPage;
   }, 2000);
 }
 
 function buildPage(page, root = "../asset/") {
-  const content = postRenderComponents(page, true);
+  const content = postRenderComponents(page.data, true);
   const htmlBody = content.html;
 
   const cssLinks = Object.keys(page.include.css || {})

@@ -29,9 +29,11 @@
 - Afficher les librairies utilisé mais manquant dans la base -> X
 - Refaire le placement des id en fonction de l'ordre de rendu, pas de création (corrige les id des enfants d'une copie) -> X
 
-## Accessibilité
+## Accessibilité -> X 21/10/2025
 
-- Permettre de definir la racine du rendu à partir d'un element "empty" d'un composant (permettre d'editer plus facillement les éléments dans un popup caché en édition)
+- Permettre de definir la racine du rendu à partir d'un element "empty" d'un composant (permettre d'editer plus facillement les éléments dans un popup caché en édition) -> X
+
+## L'outil est fonctionnel pour l'instant -> X 21/10/2025
 
 ## Avancé
 
@@ -40,4 +42,5 @@
 - Créer un mini framework js QSWSB pour mieux gerer les composants
 - Faire la documentation complète
 - Ajouter une IA interne pour generer les composants et créer des pages via un prompt
-- ajouter des tests unitaires
+- Ajouter des tests unitaires
+- Créer un Backend builder autonome pour le QSWWB
