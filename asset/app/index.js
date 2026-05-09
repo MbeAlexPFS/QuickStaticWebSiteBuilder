@@ -26,32 +26,19 @@ async function renderComponentList(search = "") {
     for (const key of Object.keys(dt)) {
       if (key.includes(search)) {
         componentlist.innerHTML += `
-        <div class="row my-3">
-          <div class="col-8">${key}</div>
+        <div class="row my-2 align-items-center">
+          <div class="col-8"><i class="bi bi-puzzle text-warning me-2"></i><strong>${key}</strong></div>
           <div class="col-4">
-            <div class="d-grid gap-2">
-              <button
-                type="button"
-                onclick="editComponent('${key}')"
-                class="btn btn-primary"
-              >
-                Editer
-              </button>
-              <button
-                type="button"
-                onclick="deleteComponent('${key}')"
-                class="btn btn-primary"
-              >
-                Supprimer
-              </button>
+            <div class="d-flex gap-1">
+              <button type="button" onclick="editComponent('${key}')" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></button>
+              <button type="button" onclick="deleteComponent('${key}')" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
             </div>
           </div>
-        </div>
-        <hr>`;
+        </div>`;
       }
     }
   } else {
-    componentlist.innerHTML = `<div class="text-center my-3 p-2 bg-primary text-light"> Aucun composant disponible</div>`;
+        componentlist.innerHTML = `<div class="text-center my-3 p-3 bg-light rounded"><i class="bi bi-inbox text-muted me-2"></i><span class="text-secondary">Aucun composant disponible</span></div>`;
   }
 }
 
@@ -82,39 +69,23 @@ async function renderSiteList(search = "") {
     for (const key of Object.keys(stdt)) {
       if (key.includes(search)) {
         sitelist.innerHTML += `
-        <div class="row my-3">
-          <div class="col-8"><h3>${key}</h3></br><h5 class="text-secondary">${stdt[key].desc}</h5></div>
+        <div class="row my-2 align-items-center">
+          <div class="col-8">
+            <h6 class="mb-0"><i class="bi bi-globe text-primary me-2"></i><strong>${key}</strong></h6>
+            <small class="text-muted">${stdt[key].desc || ''}</small>
+          </div>
           <div class="col-4">
-            <div class="d-grid gap-2">
-              <button
-                type="button"
-                onclick="editSite('${key}')"
-                class="btn btn-primary"
-              >
-                Editer
-              </button>
-              <button
-                type="button"
-                onclick="duplicate('${key}')"
-                class="btn btn-success"
-              >
-                Dupliquer
-              </button>
-              <button
-                type="button"
-                onclick="deleteSite('${key}')"
-                class="btn btn-primary"
-              >
-                Supprimer
-              </button>
+            <div class="d-flex gap-1">
+              <button type="button" onclick="editSite('${key}')" class="btn btn-sm btn-outline-primary" title="Editer"><i class="bi bi-pencil"></i></button>
+              <button type="button" onclick="duplicate('${key}')" class="btn btn-sm btn-outline-success" title="Dupliquer"><i class="bi bi-copy"></i></button>
+              <button type="button" onclick="deleteSite('${key}')" class="btn btn-sm btn-outline-danger" title="Supprimer"><i class="bi bi-trash"></i></button>
             </div>
           </div>
-        </div>
-        <hr>`;
+        </div>`;
       }
     }
   } else {
-    sitelist.innerHTML = `<div class="text-center my-3 p-2 bg-primary text-light"> Aucun site trouvé </div>`;
+    sitelist.innerHTML = `<div class="text-center my-3 p-3 bg-light rounded"><i class="bi bi-inbox text-muted me-2"></i><span class="text-secondary">Aucun site trouvé</span></div>`;
   }
 }
 
@@ -128,13 +99,13 @@ async function duplicate(site) {
   let qes;
   let newSite;
   while (!verified) {
-    qes = prompt(
+    qes = await showPrompt(
       "Entrer un nom valide pour la copie: non vide, pas le meme nom que l'original"
     );
     if (qes === "" || qes == null) {
-      alert("Veuillez entrer un nom");
+      notify("Veuillez entrer un nom", "warning");
     } else if (qes === site || stdt[qes]) {
-      alert("Entrer un nom autre que l'original et qui n'existe pas déjà");
+      notify("Entrer un nom autre que l'original et qui n'existe pas déjà", "warning");
     } else {
       verified = true;
       newSite = qes;
@@ -163,32 +134,19 @@ async function renderLibList(search = "") {
     for (const key of Object.keys(libdt)) {
       if (key.includes(search)) {
         liblist.innerHTML += `
-        <div class="row my-3">
-          <div class="col-8">${key}</div>
+        <div class="row my-2 align-items-center">
+          <div class="col-8"><i class="bi bi-boxes text-info me-2"></i><strong>${key}</strong></div>
           <div class="col-4">
-            <div class="d-grid gap-2">
-              <button
-                type="button"
-                onclick="editLib('${key}')"
-                class="btn btn-primary"
-              >
-                Editer
-              </button>
-              <button
-                type="button"
-                onclick="deleteLib('${key}')"
-                class="btn btn-primary"
-              >
-                Supprimer
-              </button>
+            <div class="d-flex gap-1">
+              <button type="button" onclick="editLib('${key}')" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></button>
+              <button type="button" onclick="deleteLib('${key}')" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
             </div>
           </div>
-        </div>
-        <hr>`;
+        </div>`;
       }
     }
   } else {
-    liblist.innerHTML = `<div class="text-center my-3 p-2 bg-primary text-light"> Aucune librairie disponible</div>`;
+    liblist.innerHTML = `<div class="text-center my-3 p-3 bg-light rounded"><i class="bi bi-inbox text-muted me-2"></i><span class="text-secondary">Aucune librairie disponible</span></div>`;
   }
 }
 
@@ -215,158 +173,109 @@ document.getElementById("loadcpn").addEventListener("change", function (event) {
   const file = event.target.files[0];
   if (file) {
     const reader = new FileReader();
-    reader.onload = function (e) {
+    reader.onload = async function (e) {
       try {
         const jsonContent = JSON.parse(e.target.result);
         const inputdt = jsonContent;
-
-        // Copie sécurisée de la data actuelle
         const newdt = { ...dt };
 
-        // Parcours des nouveaux composants à fusionner
         for (const [key, value] of Object.entries(inputdt)) {
           if (key in dt) {
-            // Composant déjà existant → demander confirmation
-            const replace = confirm(
-              `Le composant "${key}" existe déjà.\nVoulez-vous le remplacer par le nouveau ?`
+            const replace = await showConfirm(
+              `Le composant "${key}" existe déjà. Voulez-vous le remplacer par le nouveau ?`
             );
             if (replace) {
               newdt[key] = value;
-              console.log(
-                `✅ Composant "${key}" remplacé par la nouvelle version.`
-              );
-            } else {
-              console.log(`⏩ Composant "${key}" conservé (ancien gardé).`);
             }
           } else {
-            // Nouveau composant → ajout direct
             newdt[key] = value;
-            console.log(`🆕 Nouveau composant "${key}" ajouté.`);
           }
         }
 
-        // Mise à jour finale
         dt = newdt;
-        addOrUpdateData("component", dt);
+        await addOrUpdateData("component", dt);
 
-        alert("Composants chargés avec succès !");
+        notify("Composants chargés avec succès !", "success");
         renderComponentList();
-        // You can now work with the JSON content
       } catch (error) {
         console.error("Error parsing JSON:", error);
       }
     };
     reader.readAsText(file);
-  } else {
-    console.error("No file selected");
   }
 });
 
 document.getElementById("loadlib").addEventListener("change", function (event) {
-  //basé sur un code javascript importé pour charger une base
   const file = event.target.files[0];
   if (file) {
     const reader = new FileReader();
-    reader.onload = function (e) {
+    reader.onload = async function (e) {
       try {
         const jsonContent = JSON.parse(e.target.result);
         const inputdt = jsonContent;
-
-        // Copie sécurisée de la data actuelle
         const newdt = { ...libdt };
 
-        // Parcours des nouveaux composants à fusionner
         for (const [key, value] of Object.entries(inputdt)) {
           if (key in libdt) {
-            // Composant déjà existant → demander confirmation
-            const replace = confirm(
-              `La librairie "${key}" existe déjà.\nVoulez-vous le remplacer par le nouveau ?`
+            const replace = await showConfirm(
+              `La librairie "${key}" existe déjà. Voulez-vous la remplacer par la nouvelle ?`
             );
             if (replace) {
               newdt[key] = value;
-              console.log(
-                `✅ Librairie "${key}" remplacé par la nouvelle version.`
-              );
-            } else {
-              console.log(`⏩ Librairie "${key}" conservé (ancien gardé).`);
             }
           } else {
-            // Nouveau composant → ajout direct
             newdt[key] = value;
-            console.log(`🆕 Nouveau librairie "${key}" ajouté.`);
           }
         }
 
-        // Mise à jour finale
         libdt = newdt;
-        addOrUpdateData("lib", libdt);
+        await addOrUpdateData("lib", libdt);
 
-        alert("Composants chargés avec succès !");
+        notify("Librairies chargées avec succès !", "success");
         renderLibList();
-        // You can now work with the JSON content
       } catch (error) {
         console.error("Error parsing JSON:", error);
       }
     };
     reader.readAsText(file);
-  } else {
-    console.error("No file selected");
   }
 });
 
-document
-  .getElementById("loadsite")
-  .addEventListener("change", function (event) {
-    //basé sur un code javascript importé pour charger une base
-    const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = function (e) {
-        try {
-          const jsonContent = JSON.parse(e.target.result);
-          const inputdt = jsonContent;
+document.getElementById("loadsite").addEventListener("change", function (event) {
+  const file = event.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = async function (e) {
+      try {
+        const jsonContent = JSON.parse(e.target.result);
+        const inputdt = jsonContent;
+        const newdt = { ...stdt };
 
-          // Copie sécurisée de la data actuelle
-          const newdt = { ...stdt };
-
-          // Parcours des nouveaux composants à fusionner
-          for (const [key, value] of Object.entries(inputdt)) {
-            if (key in stdt) {
-              // Composant déjà existant → demander confirmation
-              const replace = confirm(
-                `Le site "${key}" existe déjà.\nVoulez-vous le remplacer par le nouveau ?`
-              );
-              if (replace) {
-                newdt[key] = value;
-                console.log(
-                  `✅ Site "${key}" remplacé par la nouvelle version.`
-                );
-              } else {
-                console.log(`⏩ Site "${key}" conservé (ancien gardé).`);
-              }
-            } else {
-              // Nouveau composant → ajout direct
+        for (const [key, value] of Object.entries(inputdt)) {
+          if (key in stdt) {
+            const replace = await showConfirm(
+              `Le site "${key}" existe déjà. Voulez-vous le remplacer par le nouveau ?`
+            );
+            if (replace) {
               newdt[key] = value;
-              console.log(`🆕 Nouveau site "${key}" ajouté.`);
             }
+          } else {
+            newdt[key] = value;
           }
-
-          // Mise à jour finale
-          stdt = newdt;
-          addOrUpdateData("site", stdt);
-
-          alert("Site chargés avec succès !");
-          renderSiteList();
-          // You can now work with the JSON content
-        } catch (error) {
-          console.error("Error parsing JSON:", error);
         }
-      };
-      reader.readAsText(file);
-    } else {
-      console.error("No file selected");
-    }
-  });
+
+        stdt = newdt;
+        await addOrUpdateData("site", stdt);
+
+        notify("Sites chargés avec succès !", "success");
+        renderSiteList();
+      } catch (error) {
+        console.error("Error parsing JSON:", error);
+      }
+    };
+    reader.readAsText(file);
+  }
+});
 
 function downloadObjectAsJson(exportObj, exportName) {
   //basé sur un code javascript importé pour telecharger une base json

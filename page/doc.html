@@ -1,140 +1,266 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>QuickStaticWebSiteBuilder - Doc</title>
+    <title>QuickWebSiteBuilder - Documentation</title>
     <link rel="icon" href="/favicon.png" type="image/x-icon" />
+    <script>try { var t=JSON.parse(localStorage.getItem('qswb_settings')||'{}').theme; if(t) document.documentElement.setAttribute('data-bs-theme',t); } catch(e){}</script>
     <link rel="stylesheet" href="../asset/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
     <script src="../asset/bootstrap.bundle.min.js"></script>
-    <title>Documentation</title>
+    <style>
+      .doc-section { scroll-margin-top: 2rem; }
+      .toc-link { color: inherit; text-decoration: none; display: block; padding: 0.25rem 0; font-size: 0.9rem; }
+      .toc-link:hover { color: var(--bs-primary); }
+      .toc-link.active { color: var(--bs-primary); font-weight: 600; }
+    </style>
   </head>
   <body>
-    <div class="container-sm p-5">
-      <div class="row d-flex">
-        <div class="col-2 m-3 border border-2 border-black rounded p-3">
-          <ul class="fw-bold">
-            <li><a class="text-decoration-none" href="/">Retour</a></li>
-            <li>
-              <a class="text-decoration-none" href="#about"
-                >Quick Static WebSite Builder ?</a
-              >
-            </li>
-            <li>
-              <a class="text-decoration-none" href="#step"
-                >Les étapes de création</a
-              >
-            </li>
-            <li>
-              <a class="text-decoration-none" href="#stack">Sous le capot</a>
-            </li>
-            <li>
-              <a class="text-decoration-none" href="#video">Vidéo de test</a>
-            </li>
-            <li><a class="text-decoration-none" href="#last">Note</a></li>
-          </ul>
+    <div class="container-fluid py-4">
+      <div class="row g-4">
+        <!-- Sidebar -->
+        <div class="col-12 col-md-3 col-lg-2">
+          <div class="position-sticky" style="top: 1rem;">
+            <div class="card border-0 shadow-sm mb-3">
+              <div class="card-body p-3">
+                <a href="/" class="btn btn-outline-primary btn-sm w-100 mb-3"><i class="bi bi-house"></i> Retour</a>
+                <nav id="toc" class="small">
+                  <a class="toc-link" href="#about"><i class="bi bi-info-circle me-1"></i>Présentation</a>
+                  <a class="toc-link" href="#quickstart"><i class="bi bi-rocket-takeoff me-1"></i>Démarrage rapide</a>
+                  <a class="toc-link" href="#components"><i class="bi bi-puzzle me-1"></i>Composants</a>
+                  <a class="toc-link" href="#site"><i class="bi bi-globe me-1"></i>Site & Pages</a>
+                  <a class="toc-link" href="#editor"><i class="bi bi-code-square me-1"></i>Éditeur de code</a>
+                  <a class="toc-link" href="#libraries"><i class="bi bi-boxes me-1"></i>Librairies</a>
+                  <a class="toc-link" href="#build"><i class="bi bi-gear me-1"></i>Build & Export</a>
+                  <a class="toc-link" href="#stack"><i class="bi bi-stack me-1"></i>Sous le capot</a>
+                  <a class="toc-link" href="#notes"><i class="bi bi-journal me-1"></i>Notes</a>
+                </nav>
+              </div>
+            </div>
+          </div>
         </div>
-        <div
-          class="col border border-2 border-black rounded p-3 overflow-auto fw-medium"
-          style="height: 90vh"
-        >
-          <h1 id="about" class="text-center p-3">
-            <i>Quick Static Website Builder ?</i>
-          </h1>
-          <p>
-            <span class="text-primary">Quick Static WebSite Builder</span> ou
-            <span class="text-primary">QSWSB</span> est un outil permettant la
-            création simple et automatique d'un site web. Cet outil est utilisé
-            principalement pour la création de site web statique (sans base de
-            données) comme des blogs, des portfolios, des catalogues ou des
-            sites de documentation. Ses principales fonctionnalités sont:
-          </p>
-          <ul>
-            <li>La création et la gestion de composants personnalisables</li>
-            <li>
-              La création visuelle de chaque pages du site avec les composants
-              disponibles
-            </li>
-            <li>La génération automatique du site web statique</li>
-            <li>
-              La possibioslté de partager les composants et les sites
-              (templates) via du JSON
-            </li>
-          </ul>
-          <p>
-            <span class="text-primary">QSWSB</span> est un projet open source,
-            vous pouvez le retrouver sur
-            <a href="https://github.com/MbeAlexPFS/QuickStaticWebSiteBuilder"
-              >ce lien</a
-            >.
-          </p>
-          <h1 id="step" class="text-center p-3">
-            <i>Les étapes de création</i>
-          </h1>
-          <h2>0 - Configuration de l'application</h2>
-          <p>
-            Vous devez l'executer sur pc, sur un serveur web et dans un
-            navigateur supportant IndexedDB
-          </p>
-          <h2>1 - Créer des composants</h2>
-          <p>
-            Vous pouvez soit créer à partir de zéro soit vous basez sur le code
-            html d'un composant vu sur le net. Vous pouvez aussi importer un
-            ensemble de composants sous forme de json créés par un utilisateur
-            qui a sauvegardé ses composants auparavant ou créés par une IA en se
-            basant sur la structure d'un composant dans le fichier
-            "components-template.txt" à la racine de l'application.
-          </p>
-          <h2>2 - Créer un site</h2>
-          <p>
-            Vous pouvez créer un site à partir de zéro ou en dupliquant un
-            modèle de site (template) pour créer un nouveau site. Vous pouvez
-            aussi importer un site sous forme de json. Vous pouvez mettre toutes
-            les ressources nécessaires (image, données json, font, ...) dans
-            dossier "ressource" à la racine de l'application, elles seront
-            automatiquement incluses dans le site à condition de les appeler en
-            précedent le chemin du fichier par "/ressource/".
-          </p>
-          <h2>3 - Builder le site</h2>
-          <p>
-            Après avoir finir la création de votre site, sauvegardez et buildez
-            et c'est fait ! votre site statique est prêt à l'emploie, il n'y'a
-            plus rien à toucher dans le build.
-          </p>
-          <h1 id="stack" class="text-center p-3">
-            <i>Sous le capot</i>
-          </h1>
-          <p>
-            Cette application est executée totalement coté client. Aucune
-            dépendances externes. Comme base de données, elle utilise indexedDB
-            (dexieDB) et le sessionStorage pour stocker les données des
-            composants et des sites. Elle utilise bootstrap pour l'interface et
-            AOS (Animation On Scroll) par defaut (expérimentale) pour les
-            animations de vos sites. Le formatage des codes est fait par la
-            librairie "Beautify" et le build par les libraires "JSZip" et
-            "FileSaver". L'application est écrite en JavaScript pur (ES6) et
-            HTML5.
-          </p>
-          <h1 id="video" class="text-center p-3">
-            <i>Vidéo de test</i>
-            <!-- je vais l'inclure après, avant la publication -->
-          </h1>
-          <h1 id="last" class="text-center p-3">
-            <i>Note</i>
-          </h1>
-          <p>
-            QSWSB a été créer dans le cadre d'allier la codage classique comme
-            on pourrait le faire sur VSCODE avec la conception visuelle de site
-            web. Tout sites statiques que vous pouvez faire avec un éditeur de
-            code classique vous pouvez le faire avec QSWSB avec en plus la
-            possibilité de créer vos pages visuellement avec les composants de
-            votre choix. Je me suis inspiré un peu de React surtout pour
-            l'aspect composant. Je ne suis pas un expert en développement web,
-            je suis encore en formation, J'acceuillerai tout avis et critiques
-            sur cette application =)
-          </p>
+
+        <!-- Content -->
+        <div class="col-12 col-md-9 col-lg-10">
+          <div class="card border-0 shadow-sm">
+            <div class="card-body p-4 p-lg-5">
+
+              <section id="about" class="doc-section mb-5">
+                <h1 class="display-6 fw-bold mb-3"><i class="text-primary bi bi-info-circle"></i> Quick Static Website Builder ?</h1>
+                <p class="lead"><strong class="text-primary">Quick Static WebSite Builder</strong> (QSWSB) est un outil de création de sites web statiques utilisable directement dans le navigateur. Pas d'installation complexe, pas de dépendances lourdes.</p>
+                <div class="row g-3 mt-3">
+                  <div class="col-md-6">
+                    <div class="card border-0 bg-body h-100">
+                      <div class="card-body">
+                        <h5><i class="text-primary bi bi-puzzle"></i> Composants</h5>
+                        <p class="small text-muted mb-0">Créez des éléments réutilisables avec paramètres personnalisables</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="card border-0 bg-body h-100">
+                      <div class="card-body">
+                        <h5><i class="text-success bi bi-eye"></i> Visuel</h5>
+                        <p class="small text-muted mb-0">Assemblez vos pages par glisser-déposer dans l'arbre hiérarchique</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="card border-0 bg-body h-100">
+                      <div class="card-body">
+                        <h5><i class="text-warning bi bi-file-zip"></i> Build automatique</h5>
+                        <p class="small text-muted mb-0">Générez un site statique complet en un clic</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="card border-0 bg-body h-100">
+                      <div class="card-body">
+                        <h5><i class="text-info bi bi-share"></i> Partage JSON</h5>
+                        <p class="small text-muted mb-0">Exportez/importez composants et sites pour les partager</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <hr class="my-5" />
+
+              <section id="quickstart" class="doc-section mb-5">
+                <h2 class="fw-bold mb-3"><i class="text-success bi bi-rocket-takeoff"></i> Démarrage rapide</h2>
+                <ol class="list-group list-group-numbered mb-3">
+                  <li class="list-group-item d-flex align-items-start">
+                    <div class="ms-2 me-auto"><strong>Lancez l'application</strong><br><code>npm start</code> puis ouvrez <a href="http://127.0.0.1:3000">http://127.0.0.1:3000</a></div>
+                  </li>
+                  <li class="list-group-item d-flex align-items-start">
+                    <div class="ms-2 me-auto"><strong>Créez des composants</strong><br>Définissez du HTML avec des parties personnalisables entre <code>{* *}</code></div>
+                  </li>
+                  <li class="list-group-item d-flex align-items-start">
+                    <div class="ms-2 me-auto"><strong>Créez un site</strong><br>Cliquez sur "Créer un site", ajoutez des pages, assemblez les composants</div>
+                  </li>
+                  <li class="list-group-item d-flex align-items-start">
+                    <div class="ms-2 me-auto"><strong>Buildez</strong><br>Cliquez sur "Builder" pour générer le site statique dans <code>project/</code></div>
+                  </li>
+                </ol>
+              </section>
+
+              <hr class="my-5" />
+
+              <section id="components" class="doc-section mb-5">
+                <h2 class="fw-bold mb-3"><i class="text-warning bi bi-puzzle"></i> Composants</h2>
+                <p>Les composants sont les briques de base de vos sites. Un composant est défini par :</p>
+                <ul>
+                  <li><strong>HTML</strong> : La structure du composant</li>
+                  <li><strong>CSS</strong> : Les styles (règles seulement)</li>
+                  <li><strong>JS</strong> : Le comportement (la variable <code>component</code> représente l'élément)</li>
+                  <li><strong>Paramètres</strong> : Parties personnalisables entre <code>{* *}</code></li>
+                  <li><strong>Librairies</strong> : Dépendances CSS/JS</li>
+                </ul>
+                <div class="alert alert-info">
+                  <i class="bi bi-info-circle"></i> Les noms de paramètres doivent contenir uniquement des lettres (pas de chiffres ni symboles).
+                </div>
+                <h5 class="mt-4">Types de paramètres</h5>
+                <div class="table-responsive">
+                  <table class="table table-bordered">
+                    <thead class="table-light">
+                      <tr><th>Type</th><th>Description</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr><td><code>text</code></td><td>Texte simple</td></tr>
+                      <tr><td><code>number</code></td><td>Valeur numérique</td></tr>
+                      <tr><td><code>textarea</code></td><td>Texte long (multiligne)</td></tr>
+                      <tr><td><code>list</code></td><td>Liste de choix prédéfinis</td></tr>
+                      <tr><td><code>empty</code></td><td>Emplacement pour enfants (composants imbriqués)</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+
+              <hr class="my-5" />
+
+              <section id="site" class="doc-section mb-5">
+                <h2 class="fw-bold mb-3"><i class="text-primary bi bi-globe"></i> Site & Pages</h2>
+                <p>Un site est composé de pages, chacune pouvant inclure :</p>
+                <ul>
+                  <li>Des <strong>composants</strong> organisés en arbre hiérarchique</li>
+                  <li>Du <strong>CSS/JS global</strong> partagé entre toutes les pages</li>
+                  <li>Du <strong>CSS/JS local</strong> spécifique à la page</li>
+                  <li>Des <strong>librairies</strong> externes</li>
+                </ul>
+                <p>L'éditeur de site offre une vue en <strong>arbre</strong> pour naviguer et organiser les éléments, et un <strong>aperçu visuel</strong> dans l'iframe.</p>
+                <div class="alert alert-warning">
+                  <i class="bi bi-exclamation-triangle"></i> Pensez à sauvegarder votre site régulièrement !
+                </div>
+              </section>
+
+              <hr class="my-5" />
+
+              <section id="editor" class="doc-section mb-5">
+                <h2 class="fw-bold mb-3"><i class="bi bi-code-square"></i> Éditeur de code</h2>
+                <p>Les zones de texte contenant du code (HTML, CSS, JavaScript) utilisent <strong>Monaco Editor</strong> (le même éditeur que VS Code) pour offrir :</p>
+                <ul>
+                  <li><i class="text-success bi bi-check-circle"></i> Coloration syntaxique automatique</li>
+                  <li><i class="text-success bi bi-check-circle"></i> Auto-complétion</li>
+                  <li><i class="text-success bi bi-check-circle"></i> Indentation automatique</li>
+                  <li><i class="text-success bi bi-check-circle"></i> Thème sombre</li>
+                  <li><i class="text-success bi bi-check-circle"></i> Numéros de ligne</li>
+                  <li><i class="text-success bi bi-check-circle"></i> Repli de code</li>
+                </ul>
+                <p>Cliquez sur le bouton <i class="bi bi-arrows-angle-expand"></i> pour ouvrir l'éditeur en plein écran.</p>
+              </section>
+
+              <hr class="my-5" />
+
+              <section id="libraries" class="doc-section mb-5">
+                <h2 class="fw-bold mb-3"><i class="text-info bi bi-boxes"></i> Librairies</h2>
+                <p>Les librairies sont des fichiers CSS ou JS externes que vous pouvez ajouter à vos projets :</p>
+                <ul>
+                  <li><strong>Fichier</strong> : Importez un fichier <code>.css</code> ou <code>.js</code> depuis votre ordinateur</li>
+                  <li><strong>Lien</strong> : Utilisez une URL CDN (ex: Bootstrap, jQuery)</li>
+                </ul>
+                <p>Les librairies peuvent être incluses au niveau du site (toutes les pages) ou d'une page spécifique.</p>
+              </section>
+
+              <hr class="my-5" />
+
+              <section id="build" class="doc-section mb-5">
+                <h2 class="fw-bold mb-3"><i class="bi bi-gear"></i> Build & Export</h2>
+                <p>Deux options pour générer votre site :</p>
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <div class="card border-primary h-100">
+                      <div class="card-body">
+                        <h5><i class="text-primary bi bi-folder"></i> Build serveur</h5>
+                        <p class="small text-muted">Le site est généré dans le dossier <code>project/</code> sur le serveur. Chaque projet possède son propre dossier <code>ressources/</code> pour ses médias.</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="card border-success h-100">
+                      <div class="card-body">
+                        <h5><i class="text-success bi bi-file-earmark-zip"></i> Export ZIP (expérimental)</h5>
+                        <p class="small text-muted">Téléchargez le site complet sous forme d'archive ZIP.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+
+
+              <section id="stack" class="doc-section mb-5">
+                <h2 class="fw-bold mb-3"><i class="bi bi-stack"></i> Sous le capot</h2>
+                <div class="table-responsive">
+                  <table class="table">
+                    <thead class="table-light">
+                      <tr><th>Technologie</th><th>Rôle</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr><td>JavaScript (ES6)</td><td>Langage principal de l'application</td></tr>
+                      <tr><td>Bootstrap 5</td><td>Interface utilisateur responsive</td></tr>
+                      <tr><td>Monaco Editor</td><td>Éditeur de code avec coloration syntaxique</td></tr>
+                      <tr><td>Dexie.js (IndexedDB)</td><td>Stockage local persistant</td></tr>
+                      <tr><td>JSZip + FileSaver</td><td>Build et export des sites</td></tr>
+                      <tr><td>Beautify</td><td>Formatage du code (HTML/CSS/JS)</td></tr>
+                      <tr><td>AOS</td><td>Animations au défilement (expérimental)</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+
+              <hr class="my-5" />
+
+              <section id="notes" class="doc-section mb-5">
+                <h2 class="fw-bold mb-3"><i class="bi bi-journal"></i> Notes</h2>
+                <div class="card border-0 bg-body">
+                  <div class="card-body">
+                    <p>QSWSB a été créé pour allier le codage classique (comme sur VS Code) avec la conception visuelle de sites web. Tout site statique que vous pouvez faire avec un éditeur de code classique, vous pouvez le faire avec QSWSB, avec en plus la possibilité de créer vos pages visuellement avec des composants réutilisables.</p>
+                    <p class="mb-0">Ce projet est open source et disponible sur <a href="https://github.com/MbeAlexPFS/QuickStaticWebSiteBuilder">GitHub</a>. Les retours et contributions sont les bienvenus !</p>
+                  </div>
+                </div>
+              </section>
+
+            </div>
+          </div>
         </div>
       </div>
     </div>
+
+    <script>
+      // Highlight current section in TOC
+      const sections = document.querySelectorAll('.doc-section');
+      const links = document.querySelectorAll('.toc-link');
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            links.forEach(l => l.classList.remove('active'));
+            const id = entry.target.id;
+            document.querySelector(`.toc-link[href="#${id}"]`)?.classList.add('active');
+          }
+        });
+      }, { rootMargin: '-20% 0px -70% 0px' });
+      sections.forEach(s => observer.observe(s));
+    </script>
   </body>
 </html>

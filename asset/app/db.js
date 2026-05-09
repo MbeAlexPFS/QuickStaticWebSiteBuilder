@@ -1,55 +1,52 @@
-// Initialisation avec le schéma directement
-const db = new Dexie("QuickWebSiteBuilderDB");
+const DATA_API = "/api/data";
 
-// Définir la structure de la base dès le début
-db.version(1).stores({
-  componentData: "id",
-  siteData: "id",
-  libData: "id",
-});
-
-async function checkDatabase() {
-  try {
-    // Tente d'ouvrir la base de données (créée si inexistante)
-    await db.open();
-    console.log("La base de données est prête !");
-  } catch (error) {
-    console.error("Erreur lors de l'ouverture de la base de données :", error);
-  }
-}
-
-// Appel de la fonction
-checkDatabase();
-
-// Ajouter ou mettre à jour des données
 async function addOrUpdateData(key, data) {
-  let record = JSON.stringify(data);
-  if (key === "component") {
-    await db.componentData.put({ id: 1, record });
-  } else if (key === "site") {
-    await db.siteData.put({ id: 1, record });
-  } else if (key === "lib") {
-    await db.libData.put({ id: 1, record });
-  }
+  const typeMap = { component: "components", site: "sites", lib: "libs" };
+  const type = typeMap[key];
+  if (!type) throw new Error("Type inconnu: " + key);
 
-  console.log("Données ajoutées ou mises à jour !");
-  alert("sauvegardé");
+  const resp = await fetch(`${DATA_API}/${type}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!resp.ok) throw new Error("Erreur sauvegarde");
+  console.log("Données sauvegardées:", key);
 }
 
-// Charger des données
 async function loadData(key) {
-  let record;
-  if (key === "component") {
-    record = await db.componentData.get(1);
-  } else if (key === "site") {
-    record = await db.siteData.get(1);
-  } else if (key === "lib") {
-    record = await db.libData.get(1);
-  }
+  const typeMap = { component: "components", site: "sites", lib: "libs" };
+  const type = typeMap[key];
+  if (!type) throw new Error("Type inconnu: " + key);
 
-  // Si aucune donnée trouvée, retourne null
-  if (!record || !record.record) return null;
+  const resp = await fetch(`${DATA_API}/${type}`);
+  if (!resp.ok) return null;
+  const data = await resp.json();
+  return Object.keys(data).length > 0 ? data : null;
+}
 
-  // Parse uniquement la chaîne JSON
-  return JSON.parse(record.record);
+async function resetAllData() {
+  const resp = await fetch("/api/data", { method: "DELETE" });
+  return resp.ok;
+}
+
+async function exportQSWB() {
+  const resp = await fetch("/api/export");
+  const blob = await resp.blob();
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `qswb-export-${Date.now()}.qswb`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+async function importQSWB(file) {
+  const text = await file.text();
+  const resp = await fetch("/api/import", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: text,
+  });
+  if (!resp.ok) throw new Error("Échec import");
+  return await resp.json();
 }

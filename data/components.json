@@ -1,0 +1,577 @@
+{
+  "Titre": {
+    "desc": "Un titre standard de niveau h1 à h6",
+    "html-code": "<h{*niveau*} style=\"color: {*couleur*}; text-align: {*alignement*}\">{*texte*}a</h{*niveau*}>",
+    "css-code": "",
+    "js-code": "",
+    "lib": [],
+    "param": {
+      "niveau": [
+        "niveau",
+        "list",
+        [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5",
+          "6"
+        ],
+        "1"
+      ],
+      "couleur": [
+        "couleur",
+        "text",
+        "#000000"
+      ],
+      "alignement": [
+        "alignement",
+        "list",
+        [
+          "left",
+          "center",
+          "right"
+        ],
+        "left"
+      ],
+      "texte": [
+        "texte",
+        "text",
+        "Mon Titre"
+      ]
+    }
+  },
+  "Paragraphe": {
+    "desc": "Un bloc de texte simple",
+    "html-code": "<p style=\"font-size: {*taille*}px; line-height: 1.5;\">{*contenu*}</p>",
+    "js-code": "",
+    "css-code": "",
+    "lib": [],
+    "param": {
+      "contenu": [
+        "contenu",
+        "textarea",
+        "Ceci est un paragraphe standard."
+      ],
+      "taille": [
+        "taille",
+        "number",
+        "16"
+      ]
+    }
+  },
+  "Image": {
+    "desc": "Une image responsive avec texte alternatif",
+    "html-code": "<img src=\"{*source*}\" alt=\"{*alt*}\" style=\"width: {*largeur*}; height: auto; border-radius: {*arrondi*}px;\">",
+    "css-code": "",
+    "js-code": "",
+    "lib": [],
+    "param": {
+      "source": [
+        "source",
+        "ressource",
+        "image.png"
+      ],
+      "alt": [
+        "alt",
+        "text",
+        "Description image"
+      ],
+      "largeur": [
+        "largeur",
+        "list",
+        [
+          "25%",
+          "50%",
+          "100%",
+          "auto"
+        ],
+        "100%"
+      ],
+      "arrondi": [
+        "arrondi",
+        "number",
+        "0"
+      ]
+    }
+  },
+  "Lien": {
+    "desc": "Un lien hypertexte simple",
+    "html-code": "<a href=\"{*url*}\" target=\"{*cible*}\" style=\"text-decoration: {*decoration*}; color: blue;\">{*texte*}</a>",
+    "js-code": "",
+    "css-code": "",
+    "lib": [],
+    "param": {
+      "url": [
+        "url",
+        "text",
+        "#"
+      ],
+      "texte": [
+        "texte",
+        "text",
+        "Cliquez ici"
+      ],
+      "cible": [
+        "cible",
+        "list",
+        [
+          "_self",
+          "_blank"
+        ],
+        "_self"
+      ],
+      "decoration": [
+        "decoration",
+        "list",
+        [
+          "none",
+          "underline"
+        ],
+        "underline"
+      ]
+    }
+  },
+  "ZoneFlex": {
+    "desc": "Un conteneur Flexbox pour aligner d'autres composants",
+    "html-code": "<div style=\"display: flex; flex-direction: {*direction*}; justify-content: {*justify*}; align-items: {*align*}; gap: {*ecart*}px;\">{*enfants*}</div>",
+    "js-code": "",
+    "css-code": "",
+    "lib": [],
+    "param": {
+      "direction": [
+        "direction",
+        "list",
+        [
+          "row",
+          "column",
+          "row-reverse",
+          "column-reverse"
+        ],
+        "row"
+      ],
+      "justify": [
+        "justify",
+        "list",
+        [
+          "flex-start",
+          "center",
+          "flex-end",
+          "space-between",
+          "space-around"
+        ],
+        "flex-start"
+      ],
+      "align": [
+        "align",
+        "list",
+        [
+          "stretch",
+          "center",
+          "flex-start",
+          "flex-end"
+        ],
+        "stretch"
+      ],
+      "ecart": [
+        "ecart",
+        "number",
+        "10"
+      ],
+      "enfants": [
+        "enfants",
+        "empty"
+      ]
+    }
+  },
+  "BoutonNeon": {
+    "desc": "Un bouton spécial avec effet de lueur au survol (CSS pur)",
+    "html-code": "<button class=\"btn-neon-{*identifiant*}\">{*label*}</button>",
+    "js-code": "",
+    "css-code": ".btn-neon-{*identifiant*} { background: transparent; border: 2px solid {*couleur*}; color: {*couleur*}; padding: 10px 20px; font-size: 16px; cursor: pointer; transition: 0.3s; border-radius: 5px; } .btn-neon-{*identifiant*}:hover { background: {*couleur*}; color: #fff; box-shadow: 0 0 10px {*couleur*}, 0 0 20px {*couleur*}; }",
+    "lib": [],
+    "param": {
+      "identifiant": [
+        "identifiant",
+        "text",
+        "unique1"
+      ],
+      "label": [
+        "label",
+        "text",
+        "Bouton Neon"
+      ],
+      "couleur": [
+        "couleur",
+        "text",
+        "#00ff00"
+      ]
+    }
+  },
+  "Accordeon": {
+    "desc": "Un composant pliant (Spoiler) avec JS fait maison",
+    "html-code": "<div class=\"acc-wrap\"><button id=\"btn-{*identifiant*}\" class=\"acc-btn-{*identifiant*}\">{*titre*}</button><div id=\"content-{*identifiant*}\" class=\"acc-content-{*identifiant*}\">{*contenu*}</div></div>",
+    "css-code": ".acc-btn-{*identifiant*} { width: 100%; padding: 10px; background: #eee; border: none; text-align: left; cursor: pointer; font-weight: bold; } .acc-content-{*identifiant*} { display: none; padding: 15px; border: 1px solid #eee; border-top: none; }",
+    "js-code": "document.getElementById('btn-{*identifiant*}').addEventListener('click', function() { var el = document.getElementById('content-{*identifiant*}'); if(el.style.display === 'block'){ el.style.display = 'none'; } else { el.style.display = 'block'; } });",
+    "lib": [],
+    "param": {
+      "identifiant": [
+        "identifiant",
+        "text",
+        "acc1"
+      ],
+      "titre": [
+        "titre",
+        "text",
+        "Voir plus de détails"
+      ],
+      "contenu": [
+        "contenu",
+        "empty"
+      ]
+    }
+  },
+  "CarteProfil": {
+    "desc": "Une carte stylisée pour présenter un utilisateur (CSS Layout)",
+    "html-code": "<div class=\"card-{*identifiant*}\"><div class=\"card-header\"><h3>{*nom*}</h3><span>{*role*}</span></div><div class=\"card-body\">{*description*}</div></div>",
+    "js-code": "",
+    "css-code": ".card-{*identifiant*} { border: 1px solid #ddd; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); max-width: 300px; font-family: sans-serif; } .card-{*identifiant*} .card-header { background: {*fond*}; color: #fff; padding: 15px; } .card-{*identifiant*} .card-header h3 { margin: 0; font-size: 1.2em; } .card-{*identifiant*} .card-body { padding: 15px; background: #fff; color: #333; }",
+    "lib": [],
+    "param": {
+      "identifiant": [
+        "identifiant",
+        "text",
+        "card1"
+      ],
+      "nom": [
+        "nom",
+        "text",
+        "John Doe"
+      ],
+      "role": [
+        "role",
+        "text",
+        "Développeur"
+      ],
+      "fond": [
+        "fond",
+        "list",
+        [
+          "#3498db",
+          "#e74c3c",
+          "#2ecc71",
+          "#34495e"
+        ],
+        "#3498db"
+      ],
+      "description": [
+        "description",
+        "textarea",
+        "Description courte de l'utilisateur."
+      ]
+    }
+  },
+  "ModalSimple": {
+    "desc": "Une fenêtre modale simple avec ouverture/fermeture",
+    "html-code": "<div><button id=\"open-{*identifiant*}\">Ouvrir {*titre*}</button><div id=\"modal-{*identifiant*}\" class=\"modal-overlay-{*identifiant*}\" style=\"display:none;\"><div class=\"modal-box\"><span id=\"close-{*identifiant*}\" style=\"float:right; cursor:pointer;\">&times;</span><h2>{*titre*}</h2><div>{*contenu*}</div></div></div></div>",
+    "css-code": ".modal-overlay-{*identifiant*} { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; justify-content: center; align-items: center; } .modal-overlay-{*identifiant*} .modal-box { background: #fff; padding: 20px; border-radius: 5px; min-width: 300px; max-width: 80%; }",
+    "js-code": "var m = document.getElementById('modal-{*identifiant*}'); var btn = document.getElementById('open-{*identifiant*}'); var span = document.getElementById('close-{*identifiant*}'); btn.onclick = function() { m.style.display = 'flex'; }; span.onclick = function() { m.style.display = 'none'; }; window.onclick = function(event) { if (event.target == m) { m.style.display = 'none'; } };",
+    "lib": [],
+    "param": {
+      "identifiant": [
+        "identifiant",
+        "text",
+        "mod1"
+      ],
+      "titre": [
+        "titre",
+        "text",
+        "Information"
+      ],
+      "contenu": [
+        "contenu",
+        "empty"
+      ]
+    }
+  },
+  "Conteneur": {
+    "desc": "Élément de structure polyvalent (div, nav, section, etc.)",
+    "html-code": "<{*balise*} id=\"{*identifiant*}\" class=\"{*classe*}\">{*contenu*}</{*balise*}>",
+    "js-code": "",
+    "css-code": "",
+    "lib": [],
+    "param": {
+      "balise": [
+        "balise",
+        "list",
+        [
+          "div",
+          "nav",
+          "article",
+          "section",
+          "header",
+          "footer",
+          "aside",
+          "main"
+        ],
+        "div"
+      ],
+      "identifiant": [
+        "identifiant",
+        "text",
+        ""
+      ],
+      "classe": [
+        "classe",
+        "text",
+        ""
+      ],
+      "contenu": [
+        "contenu",
+        "empty"
+      ]
+    }
+  },
+  "TexteInline": {
+    "desc": "Texte en ligne (span, strong, em, etc.)",
+    "html-code": "<{*type*} id=\"{*identifiant*}\" class=\"{*classe*}\">{*texte*}</{*type*}>",
+    "js-code": "",
+    "css-code": "",
+    "lib": [],
+    "param": {
+      "type": [
+        "type",
+        "list",
+        [
+          "span",
+          "strong",
+          "em",
+          "small",
+          "code",
+          "mark"
+        ],
+        "span"
+      ],
+      "identifiant": [
+        "identifiant",
+        "text",
+        ""
+      ],
+      "classe": [
+        "classe",
+        "text",
+        ""
+      ],
+      "texte": [
+        "texte",
+        "text",
+        "Texte"
+      ]
+    }
+  },
+  "Bouton": {
+    "desc": "Bouton d'action standard",
+    "html-code": "<button type=\"{*type*}\" id=\"{*identifiant*}\" class=\"{*classe*}\" onclick=\"{*action*}\">{*libelle*}</button>",
+    "js-code": "",
+    "css-code": "",
+    "lib": [],
+    "param": {
+      "type": [
+        "type",
+        "list",
+        [
+          "button",
+          "submit",
+          "reset"
+        ],
+        "button"
+      ],
+      "libelle": [
+        "libelle",
+        "text",
+        "Cliquez ici"
+      ],
+      "action": [
+        "action",
+        "text",
+        ""
+      ],
+      "identifiant": [
+        "identifiant",
+        "text",
+        ""
+      ],
+      "classe": [
+        "classe",
+        "text",
+        "btn btn-primary"
+      ]
+    }
+  },
+  "Input": {
+    "desc": "Champ de saisie simple (text, email, password, etc.)",
+    "html-code": "<input type=\"{*type*}\" name=\"{*nomParam*}\" placeholder=\"{*placeholder*}\" id=\"{*identifiant*}\" class=\"{*classe*}\" />",
+    "js-code": "",
+    "css-code": "",
+    "lib": [],
+    "param": {
+      "type": [
+        "type",
+        "list",
+        [
+          "text",
+          "password",
+          "email",
+          "number",
+          "date",
+          "color",
+          "checkbox",
+          "radio"
+        ],
+        "text"
+      ],
+      "nomParam": [
+        "nomParam",
+        "text",
+        "inputName"
+      ],
+      "placeholder": [
+        "placeholder",
+        "text",
+        "Entrez une valeur..."
+      ],
+      "identifiant": [
+        "identifiant",
+        "text",
+        ""
+      ],
+      "classe": [
+        "classe",
+        "text",
+        "form-control"
+      ]
+    }
+  },
+  "Textarea": {
+    "desc": "Zone de texte multiligne",
+    "html-code": "<textarea name=\"{*nomParam*}\" rows=\"{*lignes*}\" placeholder=\"{*placeholder*}\" id=\"{*identifiant*}\" class=\"{*classe*}\"></textarea>",
+    "js-code": "",
+    "css-code": "",
+    "lib": [],
+    "param": {
+      "nomParam": [
+        "nomParam",
+        "text",
+        "textareaName"
+      ],
+      "lignes": [
+        "lignes",
+        "number",
+        "4"
+      ],
+      "placeholder": [
+        "placeholder",
+        "text",
+        "Écrivez votre message..."
+      ],
+      "identifiant": [
+        "identifiant",
+        "text",
+        ""
+      ],
+      "classe": [
+        "classe",
+        "text",
+        "form-control"
+      ]
+    }
+  },
+  "Liste": {
+    "desc": "Liste ordonnée ou non ordonnée (conteneur pour éléments LI)",
+    "html-code": "<{*typeList*} id=\"{*identifiant*}\" class=\"{*classe*}\">{*contenu*}</{*typeList*}>",
+    "js-code": "",
+    "css-code": "",
+    "lib": [],
+    "param": {
+      "typeList": [
+        "typeList",
+        "list",
+        [
+          "ul",
+          "ol"
+        ],
+        "ul"
+      ],
+      "identifiant": [
+        "identifiant",
+        "text",
+        ""
+      ],
+      "classe": [
+        "classe",
+        "text",
+        ""
+      ],
+      "contenu": [
+        "contenu",
+        "empty"
+      ]
+    }
+  },
+  "ElementListe": {
+    "desc": "Élément 'li' pour les listes",
+    "html-code": "<li class=\"{*classe*}\">{*contenu*}</li>",
+    "js-code": "",
+    "css-code": "",
+    "lib": [],
+    "param": {
+      "classe": [
+        "classe",
+        "text",
+        ""
+      ],
+      "contenu": [
+        "contenu",
+        "empty"
+      ]
+    }
+  },
+  "Label": {
+    "desc": "Étiquette pour formulaire",
+    "html-code": "<label for=\"{*pour*}\" class=\"{*classe*}\">{*texte*}</label>",
+    "js-code": "",
+    "css-code": "",
+    "lib": [],
+    "param": {
+      "pour": [
+        "pour",
+        "text",
+        ""
+      ],
+      "texte": [
+        "texte",
+        "text",
+        "Label"
+      ],
+      "classe": [
+        "classe",
+        "text",
+        ""
+      ]
+    }
+  },
+  "LigneHorizontale": {
+    "desc": "Séparateur horizontal (hr)",
+    "html-code": "<hr class=\"{*classe*}\" />",
+    "js-code": "",
+    "css-code": "",
+    "lib": [],
+    "param": {
+      "classe": [
+        "classe",
+        "text",
+        ""
+      ]
+    }
+  }
+}

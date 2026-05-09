@@ -82,6 +82,7 @@ function scopeComponentCSS(id, cssRules, htmlTemplate) {
   return prettifyCss(css);
 }
 
+
 function prettifyCss(css) {
   return css
     .replace(/\s*{\s*/g, " {\n  ")

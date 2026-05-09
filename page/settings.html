@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>QuickWebSiteBuilder - Paramètres</title>
+    <link rel="icon" href="/favicon.png" type="image/x-icon" />
+    <script>try { var t=JSON.parse(localStorage.getItem('qswb_settings')||'{}').theme; if(t) document.documentElement.setAttribute('data-bs-theme',t); } catch(e){}</script>
+    <link rel="stylesheet" href="../asset/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <script src="../asset/bootstrap.bundle.min.js"></script>
+  </head>
+  <body>
+    <div class="container py-4">
+      <div class="d-flex align-items-center gap-3 mb-4">
+        <a href="/" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Retour</a>
+        <h2 class="mb-0"><i class="bi bi-gear-wide"></i> Paramètres</h2>
+      </div>
+
+      <div class="row g-4">
+        <!-- Thème -->
+        <div class="col-12 col-md-6">
+          <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+              <h5 class="card-title"><i class="bi bi-palette"></i> Thème</h5>
+              <p class="text-muted small">Choisissez l'apparence de l'application</p>
+              <div class="d-flex gap-3">
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="theme" id="theme-light" value="light" checked>
+                  <label class="form-check-label" for="theme-light"><i class="bi bi-sun"></i> Clair</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="theme" id="theme-dark" value="dark">
+                  <label class="form-check-label" for="theme-dark"><i class="bi bi-moon"></i> Sombre</label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sauvegarde -->
+        <div class="col-12 col-md-6">
+          <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+              <h5 class="card-title"><i class="bi bi-save"></i> Sauvegarde</h5>
+              <p class="text-muted small">Configurez la persistance automatique</p>
+              <div class="mb-3">
+                <div class="d-flex flex-column gap-2">
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="autosave" id="autosave-interval-mode" value="interval">
+                    <label class="form-check-label" for="autosave-interval-mode"><i class="bi bi-clock"></i> Par intervalle</label>
+                  </div>
+                  <div id="autosave-interval-config" class="ms-4 mb-2">
+                    <label class="form-label small">Intervalle (secondes)</label>
+                    <input type="number" class="form-control form-control-sm" id="autosave-interval" value="30" min="5" max="300" style="width: 120px;">
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="autosave" id="autosave-onchange-mode" value="onchange">
+                    <label class="form-check-label" for="autosave-onchange-mode"><i class="bi bi-arrow-repeat"></i> À chaque modification</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="autosave" id="autosave-off-mode" value="off">
+                    <label class="form-check-label" for="autosave-off-mode"><i class="bi bi-hand-index"></i> Pas de sauvegarde automatique</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+
+        <!-- Réinitialisation -->
+        <div class="col-12 col-md-6">
+          <div class="card border-0 shadow-sm h-100 border-danger">
+            <div class="card-body">
+              <h5 class="card-title text-danger"><i class="bi bi-exclamation-triangle"></i> Réinitialisation</h5>
+              <p class="text-muted small">Efface toutes les données et remet l'application à zéro</p>
+              <button class="btn btn-outline-danger" onclick="confirmReset()"><i class="bi bi-trash3"></i> Tout réinitialiser</button>
+              <div id="reset-confirm" class="d-none mt-3 p-3 bg-danger text-white rounded">
+                <p class="mb-2"><strong>Êtes-vous sûr ?</strong> Cette action est irréversible.</p>
+                <button class="btn btn-light btn-sm" onclick="executeReset()"><i class="bi bi-check-lg"></i> Confirmer</button>
+                <button class="btn btn-outline-light btn-sm" onclick="cancelReset()"><i class="bi bi-x-lg"></i> Annuler</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Import/Export -->
+        <div class="col-12">
+          <div class="card border-0 shadow-sm">
+            <div class="card-body">
+              <h5 class="card-title"><i class="bi bi-box-arrow-up"></i> Import / Export</h5>
+              <p class="text-muted small">Sauvegardez ou restaurez l'intégralité de vos données au format .qswb</p>
+              <div class="d-flex gap-2">
+                <button class="btn btn-primary" onclick="exportQSWB()"><i class="bi bi-download"></i> Exporter .qswb</button>
+                <label class="btn btn-outline-primary">
+                  <i class="bi bi-upload"></i> Importer .qswb
+                  <input type="file" accept=".qswb,.json" class="d-none" id="import-file" onchange="handleImport(event)">
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="../asset/app/core/utils.js"></script>
+    <script src="../asset/app/db.js"></script>
+    <script src="../asset/app/settings/settings.js"></script>
+  </body>
+</html>

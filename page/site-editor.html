@@ -5,11 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>QuickStaticWebSiteBuilder - Site</title>
     <link rel="icon" href="/favicon.png" type="image/x-icon">
+    <script>try { var t=JSON.parse(localStorage.getItem('qswb_settings')||'{}').theme; if(t) document.documentElement.setAttribute('data-bs-theme',t); } catch(e){}</script>
     <link rel="stylesheet" href="../asset/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <script src="../asset/bootstrap.bundle.min.js"></script>
     <script src="../asset/jszip.min.js"></script>
     <script src="../asset/FileSaver.min.js"></script>
-    <script src="../asset/dexie.min.js"></script>
     <script src="../asset/beautify.min.js"></script>
     <script src="../asset/beautify-css.min.js"></script>
     <script src="../asset/app/my-beautify.js"></script>
@@ -63,39 +64,46 @@
       .input-button:hover {
         opacity: 1;
       }
+
+      .hide + *{
+        display: none;
+      }
+
+      .transition { transition: all .2s ease-in-out; }
+      .cursor-pointer { cursor: pointer; }
+      .hover-shadow:hover { box-shadow: 0 .5rem 1rem rgba(0,0,0,.15) !important; }
+
     </style>
   </head>
   <body>
     <div class="modal fade" id="codeEditor" data-backdrop="static" data-keyboard="false" tabindex="-1" aria-labelledby="codeEditor" aria-hidden="true">
-      <div class="modal-dialog modal-xl modal-dialog-centered">
+      <div class="modal-dialog modal-xl modal-dialog-centered modal-fullscreen">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title" id="codeEditorLabel"> Edition du code css global : a.css </h5>
-            <button class="btn btn-primary mx-5" onclick="beautify()"> Formatter </button>
+            <h5 class="modal-title" id="codeEditorLabel"> Edition du code </h5>
+            <button class="btn btn-primary mx-3" onclick="beautify()"><i class="bi bi-palette"></i> Formatter</button>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
-          <div class="modal-body">
-            <textarea rows="20">
-                //hello world
-            </textarea>
+          <div class="modal-body p-0">
+            <div id="monaco-editor-container" style="height: 70vh;"></div>
           </div>
         </div>
       </div>
     </div>
     <div class="container-fluid">
       <div class="row">
-        <div class="d-flex gap-2 col-12 p-2 px-3 border border-2 border-primary">
-          <div class="col-sm-fluid">
-            <a type="button" class="btn btn-primary" href="../index.html"> Retour </a>
-            <button type="button" class="btn btn-primary" onclick="show('site')"> Paramettre </button>
-            <button type="button" class="btn btn-primary" onclick="saveSite()"> Sauvegarder </button>
+        <div class="d-flex flex-wrap gap-2 col-12 p-2 px-3 bg-body border-bottom shadow-sm">
+          <div class="d-flex gap-1">
+            <a type="button" class="btn btn-outline-secondary btn-sm" href="../index.html"><i class="bi bi-house"></i> Retour</a>
+            <button type="button" class="btn btn-outline-primary btn-sm" onclick="show('site')"><i class="bi bi-gear"></i> Paramètres</button>
+            <button type="button" class="btn btn-primary btn-sm" onclick="saveSite()"><i class="bi bi-save"></i> Sauvegarder</button>
           </div>
-          <div class="d-flex col-sm overflow-x border-start border-end border-2 border-dark px-2 gap-2" id="page-selector">
+          <div class="d-flex flex-wrap col-sm overflow-x-auto px-2 gap-1" id="page-selector">
             <!-- links btn to page of site -->
           </div>
-          <div class="col-sm-fluid">
-            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalview"> Apercu de la page </button>
-            <button type="button" class="btn btn-success" onclick="build()"> Builder </button>
+          <div class="d-flex gap-1">
+            <button type="button" class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalview"><i class="bi bi-eye"></i> Aperçu</button>
+            <button type="button" class="btn btn-success btn-sm" onclick="build()"><i class="bi bi-rocket-takeoff"></i> Builder</button>
           </div>
         </div>
         <div class="col-12 border border-2 border-primary" style="height: calc(100vh - 60px); overflow-y: auto">
@@ -129,10 +137,18 @@
                     <div class="mb-3">
                       <label for="" class="form-label">Contenu meta</label>
                       <textarea class="form-control" id="site-meta">
-																<meta charset="UTF-8" />
-																<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-															</textarea>
+						<meta charset="UTF-8" />
+						<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+                      </textarea>
                       <small class="form-text text-muted">Entrez les données meta du site</small>
+                    </div>
+                    <hr class="my-3" />
+                    <div class="mb-3">
+                      <label class="form-label fw-semibold"><i class="bi bi-arrow-repeat"></i> Synchronisation des composants</label>
+                      <p class="text-muted small">Met à jour toutes les instances de composants dans les pages avec la dernière version de la base.</p>
+                      <button type="button" class="btn btn-outline-warning w-100" onclick="refreshComponentInstances()">
+                        <i class="bi bi-arrow-repeat"></i> Rafraîchir les instances
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -223,6 +239,29 @@
                   </div>
                 </div>
               </div>
+              <div class="accordion-item" id="media-accordion-item">
+                <h2 class="accordion-header" id="headingMedia">
+                  <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseMedia" aria-expanded="true" aria-controls="collapseMedia"> <i class="bi bi-folder2-open me-2"></i> Ressources média </button>
+                </h2>
+                <div id="collapseMedia" class="accordion-collapse collapse" aria-labelledby="headingMedia" data-bs-parent="#accordionExample">
+                  <div class="accordion-body">
+                    <div id="media-panel-unsaved" class="alert alert-warning d-none mb-3 py-2"><i class="bi bi-exclamation-triangle"></i> Sauvegardez d'abord le site pour gérer les ressources.</div>
+                    <div id="media-panel-ready" class="d-none">
+                      <div class="d-flex gap-2 mb-3">
+                        <input type="file" id="media-upload-input-crud" class="form-control form-control-sm" />
+                        <button class="btn btn-primary btn-sm" onclick="resourceUploadMedia()"><i class="bi bi-upload"></i> Importer</button>
+                      </div>
+                      <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                        <table class="table table-sm table-hover mb-0">
+                          <thead><tr><th>Aperçu</th><th>Nom</th><th>Type</th><th>Taille</th><th>Actions</th></tr></thead>
+                          <tbody id="media-crud-list"></tbody>
+                        </table>
+                      </div>
+                      <div id="media-crud-empty" class="text-muted small text-center py-3 d-none"><i class="bi bi-inbox"></i> Aucune ressource</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
               <div class="accordion-item">
                 <h2 class="accordion-header" id="headingFive">
                   <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFive" aria-expanded="true" aria-controls="collapseFive"> Page </button>
@@ -284,20 +323,33 @@
             <h5 class="mb-3"> Édition de la page : <span id="page-name-editing"></span>
             </h5>
             <div class="row g-3" style="height: 80vh">
-              <div class="border border-primary border-2 p-2 mt-3 col-md-2 h-100">
-                <div class="my-3">
-                  <label>Recherche:</label>
-                  <input type="search" id="searchComponent" class="form-control" />
-                  <hr />
+              <div class="col-md-2 h-100">
+                <div class="border border-primary border-2 p-2 h-50">
+                  <div class="my-3">
+                    <label>Recherche:</label>
+                    <input type="search" id="searchComponent" class="form-control" />
+                    <hr />
+                    <div class="g-2 mt-3 row my-3 overflow-y-auto" style="height: 22vh;" id="component-selector"></div>
+                  </div>
                 </div>
-                <div class="g-2 mt-3 row my-3 overflow-y-auto" id="component-selector" style="height: 60vh"></div>
+                <div class="border border-primary border-2 p-2 h-50">
+                  <div class="my-3">
+                    <div id="tree" class="w-100 overflow-y-auto py-3">
+                    </div>
+                  </div>
+                </div>
               </div>
               <iframe src="view.html" class="col-md-8 border border-primary border-2 rounded overflow-auto h-100" id="page-view"></iframe>
-              <div class="col-md-2 border border-primary border-2 rounded overflow-auto h-100">
+              <div class="col-md-2 border border-primary border-2 rounded overflow-auto h-100" style="overflow-y: auto;">
+
                 <h3> Élément sélectionné : <span id="selected-element"></span>
                 </h3>
                 <h4 class="text-secondary"> Composant sélectionné : <span id="selected-component"></span>
                 </h4>
+                <label for="">Nom tag : </label>
+                <input class="form-control form-control-sm" type="text" id="element-tag-name" />
+                <small class="text-muted">Un nom plus simple de l'élément pour l'editeur</small><br>
+                <button class="btn btn-outline-primary btn-sm mt-1" onclick="updateTagName()"><i class="bi bi-check-lg"></i> Modifier</button>
                 <div class="accordion mt-3" id="editorAccordion">
                   <div class="accordion-item">
                     <h2 class="accordion-header" id="headingCopied">
@@ -308,12 +360,12 @@
                         <h5 class="text-dark"> Élément copié : <span id="copied-element"></span>
                         </h5>
                         <div class="d-grid gap-2 mb-3">
-                          <button class="btn btn-primary" onclick="addRootStart(true)"> Ajouter la copie au début de la page </button>
-                          <button class="btn btn-primary" onclick="addRootEnd(true)"> Ajouter la copie à la fin de la page </button>
-                          <button class="btn btn-primary" onclick="addBefore(true)"> Ajouter la copie avant </button>
-                          <button class="btn btn-primary" onclick="addAfter(true)"> Ajouter la copie après </button>
+                          <button class="btn btn-primary btn-sm" onclick="addRootStart(true)"><i class="bi bi-chevron-double-left"></i> Début de page</button>
+                          <button class="btn btn-primary btn-sm" onclick="addRootEnd(true)"><i class="bi bi-chevron-double-right"></i> Fin de page</button>
+                          <button class="btn btn-primary btn-sm" onclick="addBefore(true)"><i class="bi bi-arrow-up-short"></i> Avant</button>
+                          <button class="btn btn-primary btn-sm" onclick="addAfter(true)"><i class="bi bi-arrow-down-short"></i> Après</button>
                         </div>
-                        <button class="btn btn-danger w-100" onclick="cancelCopie()"> Annuler la copie </button>
+                        <button class="btn btn-outline-danger w-100 btn-sm" onclick="cancelCopie()"><i class="bi bi-x-lg"></i> Annuler la copie</button>
                       </div>
                     </div>
                   </div>
@@ -324,9 +376,9 @@
                     <div id="root-form" class="accordion-collapse collapse show" data-bs-parent="#editorAccordion">
                       <div class="accordion-body">
                         <div class="d-grid gap-2 mb-3">
-                          <button class="btn btn-primary" onclick="addRootStart()"> Ajouter le composant au début de la page </button>
-                          <button class="btn btn-primary" onclick="addRootEnd()"> Ajouter le composant à la fin de la page </button>
-                          <button class="btn btn-primary" id="to-init-root"> Revenir à la racine principale </button>
+                          <button class="btn btn-primary btn-sm" onclick="addRootStart()"><i class="bi bi-chevron-double-left"></i> Début de page</button>
+                          <button class="btn btn-primary btn-sm" onclick="addRootEnd()"><i class="bi bi-chevron-double-right"></i> Fin de page</button>
+                          <button class="btn btn-outline-secondary btn-sm" id="to-init-root"><i class="bi bi-arrow-up-circle"></i> Racine principale</button>
                         </div>
                       </div>
                     </div>
@@ -337,19 +389,21 @@
                     </h2>
                     <div id="element-form" class="accordion-collapse collapse" data-bs-parent="#editorAccordion">
                       <div class="accordion-body">
-                        <div class="d-grid gap-2 mb-3">
-                          <button class="btn btn-primary" onclick="addBefore()"> Ajouter le composant avant </button>
-                          <button class="btn btn-primary" onclick="addAfter()"> Ajouter le composant après </button>
+                        <div class="d-flex gap-2 mb-3">
+                          <button class="btn btn-outline-primary btn-sm flex-fill" onclick="addBefore()"><i class="bi bi-arrow-up-short"></i> Avant</button>
+                          <button class="btn btn-outline-primary btn-sm flex-fill" onclick="addAfter()"><i class="bi bi-arrow-down-short"></i> Après</button>
                         </div>
                         <div id="form-empty-param" class="mb-3">
-                          <label class="form-label">Emplacement</label>
-                          <select class="form-select form-select-lg" id="element-empty-param"></select>
-                          <button class="btn btn-primary mt-2" onclick="addIn()"> Ajouter le composant dedans </button>
-                          <button class="btn btn-primary mt-2" onclick="setRoot()"> Definir comme la nouvelle racine </button>
+                          <label class="form-label small">Emplacement vide</label>
+                          <select class="form-select form-select-sm" id="element-empty-param"></select>
+                          <div class="d-flex gap-2 mt-2">
+                            <button class="btn btn-outline-primary btn-sm flex-fill" onclick="addIn()"><i class="bi bi-box-arrow-in-down"></i> Dedans</button>
+                            <button class="btn btn-outline-secondary btn-sm flex-fill" onclick="setRoot()"><i class="bi bi-diagram-3"></i> Nouvelle racine</button>
+                          </div>
                         </div>
-                        <div class="d-grid gap-2 mb-3">
-                          <button class="btn btn-primary" onclick="copieElement()"> Copier l'élément </button>
-                          <button class="btn btn-danger" onclick="delElement()"> Supprimer l'élément </button>
+                        <div class="d-flex gap-2 mb-3">
+                          <button class="btn btn-outline-info btn-sm flex-fill" onclick="copieElement()"><i class="bi bi-copy"></i> Copier</button>
+                          <button class="btn btn-outline-danger btn-sm flex-fill" onclick="delElement()"><i class="bi bi-trash"></i> Supprimer</button>
                         </div>
                         <h5>Édition</h5>
                         <div id="element-param-form"></div>
@@ -399,17 +453,29 @@
           <div class="modal-header">
             <h5 class="modal-title" id="modalTitleId"> Apercu de la page : <span id="page">index</span>
             </h5>
-            <button type="button" class="btn btn-primary mx-5" onclick="updateRealView()"> Recharger la page </button>
+            <div class="d-flex align-items-center gap-2 mx-3">
+              <div class="btn-group btn-group-sm" role="group">
+                <button type="button" class="btn btn-outline-secondary" onclick="setPreviewSize(1920,1080)" title="Ordinateur"><i class="bi bi-display"></i></button>
+                <button type="button" class="btn btn-outline-secondary" onclick="setPreviewSize(768,1024)" title="Tablette"><i class="bi bi-tablet"></i></button>
+                <button type="button" class="btn btn-outline-secondary" onclick="setPreviewSize(375,812)" title="Téléphone"><i class="bi bi-phone"></i></button>
+              </div>
+              <input type="number" class="form-control form-control-sm" id="preview-width" value="1920" style="width:70px" placeholder="L" title="Largeur px" onchange="setPreviewSize(+this.value, +document.getElementById('preview-height').value)">
+              <span class="text-muted small">x</span>
+              <input type="number" class="form-control form-control-sm" id="preview-height" value="1080" style="width:70px" placeholder="H" title="Hauteur px" onchange="setPreviewSize(+document.getElementById('preview-width').value, +this.value)">
+              <span class="text-muted small">px</span>
+            </div>
+            <button type="button" class="btn btn-primary me-2" onclick="updateRealView()"> Recharger </button>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
-          <div class="modal-body">
-            <iframe class="h-100 w-100 border border-2 border-black" id="realview"></iframe>
+          <div class="modal-body d-flex align-items-start justify-content-center bg-secondary bg-opacity-10 overflow-auto">
+            <div id="preview-frame" class="border border-2 border-dark shadow" style="transition: width .3s, height .3s; overflow:hidden; background:#fff;">
+              <iframe class="border-0 d-block" id="realview" style="width:1920px;height:1080px;"></iframe>
+            </div>
           </div>
         </div>
       </div>
     </div>
     <!-- Librairie selection popup -->
-    <!-- Modal Body-->
     <div class="modal fade" id="lib-select" tabindex="-1" role="dialog" aria-labelledby="modalTitleId" aria-hidden="true">
       <div class="modal-dialog" role="document">
         <div class="modal-content">
@@ -459,8 +525,18 @@
       </div>
     </div>
     </div>
+
     <!-- Script principal -->
     <script src="../asset/app/db.js"></script>
-    <script src="../asset/app/make_site.js"></script>
+    <script src="../asset/app/tool.js"></script>
+    <script src="../asset/app/core/utils.js"></script>
+    <script src="../asset/app/core/monaco-loader.js"></script>
+    <script src="../asset/app/site/site-state.js"></script>
+    <script src="../asset/app/site/site-data.js"></script>
+    <script src="../asset/app/site/site-libs.js"></script>
+    <script src="../asset/app/site/site-elements.js"></script>
+    <script src="../asset/app/site/site-render.js"></script>
+    <script src="../asset/app/site/site-builder.js"></script>
+    <script src="../asset/app/site/site-core.js"></script>
   </body>
 </html>

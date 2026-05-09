@@ -1,3 +1,73 @@
+// component/component-core.js
+// State, init, save, Monaco for component editor (from make_component.js)
+
+// =======================
+// Monaco Editor state
+// =======================
+let monacoEditors = {};
+let monacoComponentContainer = null;
+let monacoComponentType = '';
+let monacoLoaded = false;
+
+function loadMonacoComponent(callback) {
+  if (monacoLoaded) { callback(); return; }
+  const script = document.createElement('script');
+  script.src = 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js';
+  script.onload = function () {
+    require.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' } });
+    require(['vs/editor/editor.main'], function () {
+      monacoLoaded = true;
+      callback();
+    });
+  };
+  document.head.appendChild(script);
+}
+
+function initMonacoEditors() {
+  const configs = [
+    { id: 'monaco-html', textareaId: 'cdeComponent', lang: 'html' },
+    { id: 'monaco-css', textareaId: 'cdeCSSComponent', lang: 'css' },
+    { id: 'monaco-js', textareaId: 'cdeJSComponent', lang: 'javascript' },
+  ];
+
+  configs.forEach(({ id, textareaId, lang }) => {
+    const container = document.getElementById(id);
+    const ta = document.getElementById(textareaId);
+    if (!container || !ta) return;
+
+    monacoEditors[lang] = monaco.editor.create(container, {
+      value: ta.value,
+      language: lang,
+      theme: 'vs-dark',
+      automaticLayout: true,
+      minimap: { enabled: false },
+      fontSize: 13,
+      lineNumbers: 'on',
+      scrollBeyondLastLine: false,
+      wordWrap: 'on',
+    });
+
+    monacoEditors[lang].onDidChangeModelContent(() => {
+      ta.value = monacoEditors[lang].getValue();
+    });
+  });
+}
+
+function syncMonacoEditors() {
+  const configs = [
+    { textareaId: 'cdeComponent', lang: 'html' },
+    { textareaId: 'cdeCSSComponent', lang: 'css' },
+    { textareaId: 'cdeJSComponent', lang: 'javascript' },
+  ];
+  configs.forEach(({ textareaId, lang }) => {
+    const ta = document.getElementById(textareaId);
+    const editor = monacoEditors[lang];
+    if (ta && editor && ta.value !== editor.getValue()) {
+      editor.setValue(ta.value);
+    }
+  });
+}
+
 // =======================
 // Sélection des éléments
 // =======================
@@ -20,39 +90,32 @@ const el = {
 let cdeComponent = "";
 let cdeCSSComponent = "";
 let cdeJSComponent = "";
-let choicesComponent = {}; // { paramName: [choices] }
-let paramsComponent = {}; // { paramName: [name, type, value?, default?] }
-let libComponent = []; // liste de libs incluses
+let choicesComponent = {};
+let paramsComponent = {};
+let libComponent = [];
 
-let libData; // chargé à l'init
-
-// =======================
-// Utilitaires
-// =======================
-
-// Extraction des tokens { *name* } -> retourne un tableau unique de noms
-const extractClassTokens = (input = "") => {
-  if (!input) return [];
-  // capture uniquement alphanum (identique à ton regex original)
-  const re = /\{\*([A-Za-z0-9]+)\*\}/g;
-  const set = [];
-  let m;
-  while ((m = re.exec(input)) !== null) set.push(m[1]);
-  return [...set];
-};
-
-const getById = (id) => document.querySelector("#" + id);
+let libData;
 
 // Beautify (gardé tel quel, appelle fonctions externes)
 function beautify() {
-  if (el.cdeComponentInput)
-    el.cdeComponentInput.value = html_beautify(el.cdeComponentInput.value, {
-      indent_size: 2,
-    });
-  if (el.cdeCSSComponentInput)
-    el.cdeCSSComponentInput.value = autoBeautify(el.cdeCSSComponentInput.value);
-  if (el.cdeJSComponentInput)
-    el.cdeJSComponentInput.value = autoBeautify(el.cdeJSComponentInput.value);
+  loadMonacoComponent(function () {
+    if (!monacoLoaded) return;
+    const htmlEditor = monacoEditors['html'];
+    const cssEditor = monacoEditors['css'];
+    const jsEditor = monacoEditors['js'];
+    if (htmlEditor) {
+      const val = html_beautify(htmlEditor.getValue(), { indent_size: 2 });
+      htmlEditor.setValue(val);
+    }
+    if (cssEditor) {
+      const val = autoBeautify(cssEditor.getValue());
+      cssEditor.setValue(val);
+    }
+    if (jsEditor) {
+      const val = autoBeautify(jsEditor.getValue());
+      jsEditor.setValue(val);
+    }
+  });
 }
 
 // =======================
@@ -76,9 +139,8 @@ async function submitCode() {
   const css = el.cdeCSSComponentInput?.value || "";
   const js = el.cdeJSComponentInput?.value || "";
 
-  if (!html.trim()) return alert("Vous devez entrer un code pour continuer.");
+  if (!html.trim()) { notify("Vous devez entrer un code pour continuer.", "warning"); return; }
 
-  //verifier si il y'a des paramettres doubles
   let params = [
     ...extractClassTokens(html),
     ...extractClassTokens(css),
@@ -110,7 +172,6 @@ async function initComponentParamForm(editing = false) {
   if (!el.editComponentParam) return;
   el.editComponentParam.innerHTML = "";
 
-  // récupérer tous les tokens des 3 sources (unique)
   const tokens = [
     ...extractClassTokens(cdeComponent),
     ...extractClassTokens(cdeCSSComponent),
@@ -122,7 +183,6 @@ async function initComponentParamForm(editing = false) {
   const editKey = editing ? sessionStorage.getItem("edit") : null;
 
   uniqueTokens.forEach((name) => {
-    // HTML fragment pour le param (identique à ton markup)
     el.editComponentParam.insertAdjacentHTML(
       "beforeend",
       `<div class="mb-3">
@@ -141,6 +201,7 @@ async function initComponentParamForm(editing = false) {
               <option value="number">Nombre</option>
               <option value="list">Liste</option>
               <option value="textarea">LongText</option>
+              <option value="ressource">Ressource (fichier média)</option>
           </select>
       </div>
       <div id="form-choice-${name}">
@@ -166,15 +227,12 @@ async function initComponentParamForm(editing = false) {
       </div>`
     );
 
-    // initialisation de l'état local
     if (!editing) {
       choicesComponent[name] = [];
       paramsComponent[name] = [name, "empty"];
-      // appliquer l'affichage par défaut
       toggleComponentParamTypeForm(name);
       updateComponentChoiceList(name);
     } else {
-      // éditer : restaurer l'état si présent
       const compo = compoData?.[editKey];
       const paramState = compo?.param?.[name];
       if (paramState) {
@@ -202,7 +260,6 @@ async function initComponentParamForm(editing = false) {
           if (formChoice) formChoice.style.display = "none";
         }
       } else {
-        // si pas de param dans le composant édité, fallback
         choicesComponent[name] = [];
         paramsComponent[name] = [name, "empty"];
       }
@@ -211,7 +268,6 @@ async function initComponentParamForm(editing = false) {
   });
 }
 
-// toggler le formulaire par type
 function toggleComponentParamTypeForm(element) {
   const form = getById("form-default-" + element);
   const typeInput = getById("param-type-" + element);
@@ -225,7 +281,6 @@ function toggleComponentParamTypeForm(element) {
   if (form) form.classList.remove("d-none");
 
   if (isList) {
-    // Construire <select> depuis choicesComponent[element]
     const choices = (choicesComponent[element] || []).map((ch) =>
       ch === paramsComponent[element]?.[3]
         ? `<option selected value="${ch}">${ch}</option>`
@@ -236,7 +291,6 @@ function toggleComponentParamTypeForm(element) {
         ""
       )}</select>`;
   } else {
-    // hide form si empty
     if (type === "empty") {
       if (form) form.classList.add("d-none");
       if (inputForm) inputForm.innerHTML = "";
@@ -253,7 +307,6 @@ function toggleComponentParamTypeForm(element) {
   }
 }
 
-// met à jour la liste de choix affichée et l'état paramsComponent
 function updateComponentChoiceList(element) {
   const inputDefault = getById("default-param-" + element)?.querySelector(
     ".input-default"
@@ -284,7 +337,6 @@ function updateComponentChoiceList(element) {
 }
 
 function updateComponentParamAll() {
-  // regénérer la liste unique des tokens
   const tokens = [
     ...extractClassTokens(cdeComponent),
     ...extractClassTokens(cdeCSSComponent),
@@ -311,13 +363,12 @@ function updateComponentParamAll() {
   });
 }
 
-// ajout / suppression choix
 function addComponentChoice(element) {
   const input = getById("choice-name-" + element);
   const name = input ? input.value.trim() : "";
-  if (!name) return alert("Veuillez renseigner un choix.");
+  if (!name) { notify("Veuillez renseigner un choix.", "warning"); return; }
   if ((choicesComponent[element] || []).includes(name))
-    return alert("Ce choix existe déjà.");
+    { notify("Ce choix existe déjà.", "warning"); return; }
   choicesComponent[element] = [...(choicesComponent[element] || []), name];
   updateComponentChoiceList(element);
 }
@@ -337,8 +388,16 @@ async function saveComponent() {
   updateComponentParamAll();
 
   if (component_name.trim() === "") {
-    alert("veuillez assigner un nom au composant");
+    notify("veuillez assigner un nom au composant", "warning");
     return "error";
+  }
+
+  // Warn about ressource params without default value
+  const missingDefaults = Object.entries(paramsComponent)
+    .filter(([, p]) => p[1] === "ressource" && !p[2])
+    .map(([name]) => name);
+  if (missingDefaults.length > 0) {
+    notify(`Attention : le(s) paramètre(s) "${missingDefaults.join(', ')}" est/sont de type "ressource" mais n'ont pas de valeur par défaut.`, "warning");
   }
 
   const data = (await loadData("component")) || {};
@@ -357,11 +416,43 @@ async function saveComponent() {
 
   const editComponent = sessionStorage.getItem("edit");
   if (Object.keys(data).includes(component_name) && editComponent === "null") {
-    alert("Erreur: un composant avec le même nom existe déjà");
+    notify("Erreur: un composant avec le même nom existe déjà", "error");
     return;
   }
   data[component_name] = text[component_name];
   await addOrUpdateData("component", data);
+  notify("Composant sauvegardé", "success");
+}
+
+// =======================
+// Autosave
+// =======================
+let componentAutosaveTimer = null;
+
+function setupComponentAutosave() {
+  if (componentAutosaveTimer) { clearInterval(componentAutosaveTimer); componentAutosaveTimer = null; }
+  try {
+    const settings = JSON.parse(localStorage.getItem('qswb_settings') || '{}');
+    const mode = settings.autosaveMode || 'off';
+    if (mode === 'off') return;
+
+    const doSave = debounce(() => {
+      const name = document.querySelector('#component-name')?.value?.trim();
+      if (name) saveComponent();
+    }, 1000);
+
+    if (mode === 'interval') {
+      const interval = (parseInt(settings.autosaveInterval) || 30) * 1000;
+      componentAutosaveTimer = setInterval(() => {
+        const name = document.querySelector('#component-name')?.value?.trim();
+        if (name) saveComponent();
+      }, interval);
+    } else if (mode === 'onchange') {
+      document.querySelectorAll('#setCode textarea, #editCode input, #editCode textarea').forEach(el => {
+        el.addEventListener('input', doSave);
+      });
+    }
+  } catch (e) { console.warn('Component autosave error:', e); }
 }
 
 // =======================
@@ -392,8 +483,14 @@ async function init() {
     }
   }
 
+  loadMonacoComponent(function () {
+    initMonacoEditors();
+    syncMonacoEditors();
+  });
+
   updateLib();
   if (el.editCdeCont) el.editCdeCont.style.display = "none";
+  setupComponentAutosave();
 }
 
 // =======================
@@ -462,126 +559,6 @@ function libAction(action, lib) {
   }
   libComponent = libComponent.filter((item) => item !== lib);
   updateLib();
-}
-
-// =======================
-// Rendu / Prévisualisation
-// =======================
-// Remplace tous les tokens par les valeurs actuelles (une seule passe par type)
-function renderComponent(data) {
-  let renderHTML = data["html-code"] ?? "";
-  let renderCSS = data["css-code"] ?? "";
-  let renderJS = data["js-code"] ?? "";
-
-  // construire liste unique de tokens présents dans les 3 parties
-  const tokens = [
-    ...extractClassTokens(renderHTML),
-    ...extractClassTokens(renderCSS),
-    ...extractClassTokens(renderJS),
-  ];
-  const unique = [...new Set(tokens)];
-
-  unique.forEach((param) => {
-    const p = data.param?.[param] ?? [param, "empty"];
-    const type = p[1];
-    const replacement = type === "list" ? p[3] ?? "" : p[2] ?? "";
-    const token = `{*${param}*}`;
-    // replaceAll est disponible ; si besoin on peut fallback
-    renderHTML = renderHTML.split(token).join(replacement);
-    renderCSS = renderCSS.split(token).join(replacement);
-    renderJS = renderJS.split(token).join(replacement);
-  });
-
-  // parse HTML/CSS/JS
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(renderHTML, "text/html");
-  const body = doc.body;
-  const firstElement = [...body.childNodes].find((n) => n.nodeType === 1);
-
-  if (firstElement) {
-    firstElement.setAttribute("id", "component-preview");
-    firstElement.classList.add("component-element");
-  }
-
-  return [body.innerHTML, renderCSS, renderJS];
-}
-
-async function updateRealView(data /* objet composant */) {
-  // Génère rendu une fois
-  const [htmlBody, cssBody, jsBody] = renderComponent(data);
-
-  // Vérifie s'il y a au moins un sélecteur CSS (un "{" dans le texte)
-
-  const cssLinks =
-    cssBody.trim() !== ""
-      ? `<style> ${scopeComponentCSS(
-          ".component-element",
-          cssBody,
-          data["html-code"]
-        )} </style>`
-      : "";
-
-  const jsScripts =
-    jsBody.trim() !== ""
-      ? `<script> document.querySelectorAll('.component-element').forEach((component) => { 
-        ${jsBody}
-        });</script>`
-      : "";
-
-  // inclusion libs
-  let libInclusion = "";
-  (libComponent || []).forEach((name) => {
-    const libinfo = libData?.[name];
-    if (!libinfo) return;
-    libInclusion += libinfo.type ? libinfo.link : libinfo.file;
-  });
-
-  const srcdoc = `<!DOCTYPE html>
-    <html lang="fr">
-    <head>
-      <meta charset="UTF-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      ${libInclusion}
-      ${cssLinks}
-    </head>
-    <body>
-      ${htmlBody}
-      ${jsScripts}
-    </body>
-    </html>`;
-
-  if (!el.realView) return;
-
-  el.realView.srcdoc = srcdoc;
-  // masquer pendant l'ajout d'évts pour éviter flicker
-  el.realView.classList.add("d-none");
-
-  // Bloquer navigation dans l'iframe (si contentDocument accessible)
-  try {
-    const doc = el.realView.contentDocument;
-    if (doc) {
-      doc.body.addEventListener("click", (e) => {
-        if (e.target.tagName === "A" || e.target.closest("a")) {
-          e.preventDefault();
-        }
-      });
-    }
-  } catch (err) {
-    // cross-origin ou timing : on ignore silencieusement (comportement inchangé)
-  }
-
-  el.realView.classList.remove("d-none");
-}
-
-if (el.previewBtn) {
-  el.previewBtn.onclick = () => {
-    updateRealView({
-      "html-code": cdeComponent.trim(),
-      "css-code": cdeCSSComponent.trim(),
-      "js-code": cdeJSComponent.trim(),
-      param: paramsComponent,
-    });
-  };
 }
 
 // =======================

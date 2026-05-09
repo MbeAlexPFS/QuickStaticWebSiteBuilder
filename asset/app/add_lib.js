@@ -38,7 +38,7 @@ el.libFile.addEventListener("change", function (event) {
       } else if (extension === "js") {
         libFiledt = "<script>" + e.target.result + "</script>";
       } else {
-        alert("Veuillez importer une librairie valide (css ou js)");
+        notify("Veuillez importer une librairie valide (css ou js)", "warning");
         return;
       }
     };
@@ -52,12 +52,12 @@ async function addOrUpdateLib() {
   let data = (await loadData("lib")) || {};
   //nom pas vide et unique
   if (!libName) {
-    alert("Le nom de la librairie ne peut pas être vide.");
+    notify("Le nom de la librairie ne peut pas être vide.", "warning");
     return;
   }
 
   if (data[libName] && sessionStorage.getItem("edit") !== libName) {
-    alert("Une librairie avec ce nom existe déjà.");
+    notify("Une librairie avec ce nom existe déjà.", "warning");
     return;
   }
 
@@ -70,7 +70,7 @@ async function addOrUpdateLib() {
   data[libName] = libData;
 
   await addOrUpdateData("lib", data);
-  alert("Librairie ajoutée ou mise à jour avec succès !");
+  notify("Librairie ajoutée ou mise à jour avec succès !", "success");
 }
 
 // Initialisation
@@ -87,10 +87,30 @@ async function init() {
 
     // indiquer si la libraire a une données si c'est un fichier
     if (data[editLib].file !== "") {
-      alert("La librairie a un fichier associé.");
-      //demander à voir le contenu du fichier
-      if (confirm("Voulez-vous voir un apercu du contenu")) {
-        alert("Contenu du fichier : " + data[editLib].file);
+      notify("La librairie a un fichier associé.", "info");
+      if (await showConfirm("Voulez-vous voir un apercu du contenu ?")) {
+        const modalEl = document.createElement('div');
+        modalEl.className = 'modal fade';
+        modalEl.setAttribute('tabindex', '-1');
+        modalEl.innerHTML = `
+          <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">Contenu du fichier</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                <pre class="border rounded p-3 bg-light" style="max-height:60vh;overflow:auto;white-space:pre-wrap;word-break:break-all;">${data[editLib].file.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+              </div>
+            </div>
+          </div>`;
+        document.body.appendChild(modalEl);
+        const modal = new bootstrap.Modal(modalEl);
+        modalEl.addEventListener('hidden.bs.modal', () => modalEl.remove(), { once: true });
+        modal.show();
       }
     }
   }
@@ -99,4 +119,4 @@ async function init() {
 }
 
 // Appel de l'initialisation
-document.addEventListener("DOMContentLoaded", init);
+document.addEventListener("DOMContentLoaded", () => { init(); });

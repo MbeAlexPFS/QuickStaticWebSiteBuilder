@@ -1,10 +1,12 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>QuickStaticWebSiteBuilder</title>
+    <script>try { var t=JSON.parse(localStorage.getItem('qswb_settings')||'{}').theme; if(t) document.documentElement.setAttribute('data-bs-theme',t); } catch(e){}</script>
     <link rel="stylesheet" href="asset/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
     <link rel="icon" href="/favicon.png" type="image/x-icon" />
     <script src="asset/bootstrap.bundle.min.js"></script>
     <script src="asset/beautify.min.js"></script>
@@ -34,40 +36,30 @@
             ></button>
           </div>
           <div class="modal-body">
-            <button class="btn btn-primary my-2" onclick="createComponent()">
-              Créer un nouveau composant
+            <button class="btn btn-primary my-2 w-100" onclick="createComponent()">
+              <i class="bi bi-plus-lg"></i> Créer un nouveau composant
             </button>
-            <hr />
+            <hr class="my-3" />
             <div class="mb-3">
-              <label for="" class="form-label"
-                >Charger un pack de composant (.json)
-              </label>
+              <label class="form-label fw-semibold"><i class="bi bi-upload"></i> Charger un pack de composant (.json)</label>
               <input type="file" class="form-control" id="loadcpn" />
             </div>
-            <hr />
+            <hr class="my-3" />
             <div class="mb-3">
-              <button class="btn btn-primary" onclick="saveComponentPack()">
-                Sauvegarder les composants
+              <button class="btn btn-outline-primary w-100" onclick="saveComponentPack()">
+                <i class="bi bi-download"></i> Sauvegarder les composants
               </button>
             </div>
-            <hr />
-            <div class="row gap-3 my-3 align-items-center">
-              <div class="col-md"><h5>Editer un composant</h5></div>
+            <hr class="my-3" />
+            <div class="row g-2 my-3 align-items-center">
+              <div class="col-md"><h5 class="mb-0"><i class="bi bi-pencil-square"></i> Editer un composant</h5></div>
               <div class="col-md">
-                <label>Recherche:</label>
-                <input
-                  type="search"
-                  id="searchComponent"
-                  class="form-control"
-                />
+                <label class="form-label small">Recherche:</label>
+                <input type="search" id="searchComponent" class="form-control" placeholder="Nom du composant..." />
               </div>
             </div>
 
-            <div
-              class="row align-items-center overflow-y-auto border border-2 border-secondary rounded"
-              style="height: 300px"
-              id="component-list"
-            ></div>
+            <div class="overflow-y-auto border rounded" style="height: 300px" id="component-list"></div>
           </div>
           <div class="modal-footer">
             <button
@@ -106,36 +98,30 @@
             ></button>
           </div>
           <div class="modal-body">
-            <button class="btn btn-primary my-2" onclick="addLib()">
-              Ajouter une nouvelle librairie
+            <button class="btn btn-primary my-2 w-100" onclick="addLib()">
+              <i class="bi bi-plus-lg"></i> Ajouter une nouvelle librairie
             </button>
-            <hr />
+            <hr class="my-3" />
             <div class="mb-3">
-              <label for="" class="form-label"
-                >Charger un pack de librairies (.json)
-              </label>
+              <label class="form-label fw-semibold"><i class="bi bi-upload"></i> Charger un pack de librairies (.json)</label>
               <input type="file" class="form-control" id="loadlib" />
             </div>
-            <hr />
+            <hr class="my-3" />
             <div class="mb-3">
-              <button class="btn btn-primary" onclick="saveLibPack()">
-                Sauvegarder les librairies
+              <button class="btn btn-outline-primary w-100" onclick="saveLibPack()">
+                <i class="bi bi-download"></i> Sauvegarder les librairies
               </button>
             </div>
-            <hr />
-            <div class="row gap-3 my-3 align-items-center">
-              <div class="col-md"><h5>Listes des libraires installées</h5></div>
+            <hr class="my-3" />
+            <div class="row g-2 my-3 align-items-center">
+              <div class="col-md"><h5 class="mb-0"><i class="bi bi-collection"></i> Liste des librairies installées</h5></div>
               <div class="col-md">
-                <label>Recherche:</label>
-                <input type="search" id="searchLib" class="form-control" />
+                <label class="form-label small">Recherche:</label>
+                <input type="search" id="searchLib" class="form-control" placeholder="Nom de la librairie..." />
               </div>
             </div>
 
-            <div
-              class="row align-items-center overflow-y-auto border border-2 border-secondary rounded"
-              style="height: 300px"
-              id="lib-list"
-            ></div>
+            <div class="overflow-y-auto border rounded" style="height: 300px" id="lib-list"></div>
           </div>
           <div class="modal-footer">
             <button
@@ -175,27 +161,21 @@
           </div>
           <div class="modal-body">
             <div class="mb-3">
-              <label for="" class="form-label"
-                >Charger un pack de site (.json)
-              </label>
+              <label class="form-label fw-semibold"><i class="bi bi-upload"></i> Charger un pack de site (.json)</label>
               <input type="file" class="form-control" id="loadsite" />
             </div>
-            <hr />
+            <hr class="my-3" />
             <div class="mb-3">
-              <button class="btn btn-primary" onclick="saveSitePack()">
-                Sauvegarder les sites
+              <button class="btn btn-outline-primary w-100" onclick="saveSitePack()">
+                <i class="bi bi-download"></i> Sauvegarder les sites
               </button>
             </div>
-            <hr />
-            <div class="my-3">
-              <label>Recherche:</label>
-              <input type="search" id="searchSite" class="form-control" />
+            <hr class="my-3" />
+            <div class="mb-3">
+              <label class="form-label small">Recherche:</label>
+              <input type="search" id="searchSite" class="form-control" placeholder="Nom du site..." />
             </div>
-            <div
-              class="row align-items-center overflow-y-auto border border-2 border-secondary rounded"
-              style="height: 300px"
-              id="site-list"
-            ></div>
+            <div class="overflow-y-auto border rounded" style="height: 300px" id="site-list"></div>
           </div>
           <div class="modal-footer">
             <button
@@ -211,67 +191,92 @@
     </div>
 
     <!-- body -->
-    <div class="container-sm">
-      <div class="d-flex g-0 justify-content-center align-items-center m-5">
-        <div
-          class="rounded-start shadow border border-2 border-dark p-3 bg-light"
-          style="z-index: 100"
-        >
-          <h1>
-            <span class="text-primary">Quick</span><br /><span
-              class="text-secondary"
-              >Static</span
-            ><br /><span class="text-success">WebSite</span><br />Builder
-          </h1>
-        </div>
-        <div
-          class="row p-3 border border-2 border-secondary shadow rounded-end"
-        >
-          <a
-            class="card btn btn-primary m-2 col-md"
-            href="page/site-editor.html"
-            onclick="sessionStorage.setItem('editsite',null)"
-          >
-            <div class="card-body">
-              <h6 class="card-title">Créer un site</h6>
+    <div class="container min-vh-100 d-flex align-items-center justify-content-center">
+      <div class="row w-100 justify-content-center">
+        <div class="col-12 col-lg-10">
+          <div class="text-center mb-5">
+            <h1 class="display-4 fw-bold">
+              <span class="text-primary">Quick</span><span class="text-secondary">Static</span><span class="text-success">WebSite</span><span class="text-body">Builder</span>
+            </h1>
+            <p class="lead text-muted">Créez des sites web statiques simplement et rapidement</p>
+          </div>
+          <div class="row g-3 justify-content-center">
+            <div class="col-md-4 col-sm-6">
+              <a class="text-decoration-none" href="page/site-editor.html" onclick="sessionStorage.setItem('editsite', null)">
+                <div class="card h-100 border-0 shadow-sm hover-shadow transition">
+                  <div class="card-body text-center p-4">
+                    <div class="display-6 text-primary mb-3"><i class="bi bi-plus-square"></i></div>
+                    <h5 class="card-title">Créer un site</h5>
+                    <p class="card-text text-muted small">Partez de zéro pour créer un nouveau site</p>
+                  </div>
+                </div>
+              </a>
             </div>
-          </a>
-          <button
-            class="card btn btn-primary m-2 col-md"
-            data-bs-toggle="modal"
-            data-bs-target="#site-menu"
-          >
-            <div class="card-body">
-              <h6 class="card-title">Charger un site</h6>
+            <div class="col-md-4 col-sm-6">
+              <button class="btn p-0 border-0 w-100" data-bs-toggle="modal" data-bs-target="#site-menu">
+                <div class="card h-100 border-0 shadow-sm hover-shadow transition">
+                  <div class="card-body text-center p-4">
+                    <div class="display-6 text-success mb-3"><i class="bi bi-folder-open"></i></div>
+                    <h5 class="card-title">Charger un site</h5>
+                    <p class="card-text text-muted small">Ouvrir un site existant depuis la base</p>
+                  </div>
+                </div>
+              </button>
             </div>
-          </button>
-          <button
-            class="card btn btn-primary m-2 col-md"
-            data-bs-toggle="modal"
-            data-bs-target="#component-menu"
-          >
-            <div class="card-body">
-              <h6 class="card-title">Gérer les composants</h6>
+            <div class="col-md-4 col-sm-6">
+              <button class="btn p-0 border-0 w-100" data-bs-toggle="modal" data-bs-target="#component-menu">
+                <div class="card h-100 border-0 shadow-sm hover-shadow transition">
+                  <div class="card-body text-center p-4">
+                    <div class="display-6 text-warning mb-3"><i class="bi bi-puzzle"></i></div>
+                    <h5 class="card-title">Gérer les composants</h5>
+                    <p class="card-text text-muted small">Créez, éditez ou importez des composants</p>
+                  </div>
+                </div>
+              </button>
             </div>
-          </button>
-          <button
-            class="card btn btn-primary m-2 col-md"
-            data-bs-toggle="modal"
-            data-bs-target="#lib-menu"
-          >
-            <div class="card-body">
-              <h6 class="card-title">Gérer les librairies</h6>
+            <div class="col-md-4 col-sm-6">
+              <button class="btn p-0 border-0 w-100" data-bs-toggle="modal" data-bs-target="#lib-menu">
+                <div class="card h-100 border-0 shadow-sm hover-shadow transition">
+                  <div class="card-body text-center p-4">
+                    <div class="display-6 text-info mb-3"><i class="bi bi-boxes"></i></div>
+                    <h5 class="card-title">Gérer les librairies</h5>
+                    <p class="card-text text-muted small">Ajoutez CSS/JS externes à vos projets</p>
+                  </div>
+                </div>
+              </button>
             </div>
-          </button>
-          <a class="card btn btn-primary m-2 col-md" href="page/doc.html">
-            <div class="card-body">
-              <h6 class="card-title">Guide et reference</h6>
+            <div class="col-md-4 col-sm-6">
+              <a class="text-decoration-none" href="page/settings.html">
+                <div class="card h-100 border-0 shadow-sm hover-shadow transition">
+                  <div class="card-body text-center p-4">
+                    <div class="display-6 text-secondary mb-3"><i class="bi bi-gear-wide"></i></div>
+                    <h5 class="card-title">Paramètres</h5>
+                    <p class="card-text text-muted small">Thème, sauvegarde, IA et réinitialisation</p>
+                  </div>
+                </div>
+              </a>
             </div>
-          </a>
+            <div class="col-md-4 col-sm-6">
+              <a class="text-decoration-none" href="page/doc.html">
+                <div class="card h-100 border-0 shadow-sm hover-shadow transition">
+                  <div class="card-body text-center p-4">
+                    <div class="display-6 text-secondary mb-3"><i class="bi bi-book"></i></div>
+                    <h5 class="card-title">Guide et reference</h5>
+                    <p class="card-text text-muted small">Documentation et aide d'utilisation</p>
+                  </div>
+                </div>
+              </a>
+            </div>
+          </div>
         </div>
       </div>
     </div>
-    <script src="asset/dexie.min.js"></script>
+    <style>
+      .hover-shadow:hover { box-shadow: 0 .5rem 1rem rgba(0,0,0,.15) !important; transform: translateY(-3px); }
+      .transition { transition: all .2s ease-in-out; }
+      .card { cursor: pointer; }
+    </style>
+    <script src="asset/app/core/utils.js"></script>
     <script src="asset/app/db.js"></script>
     <script src="asset/app/index.js"></script>
   </body>
